@@ -31,6 +31,15 @@ export const Header: React.FC = React.memo(() => {
     setIsMenuOpen(false);
   }, [logout, navigate]);
 
+  const handleLogoClick = useCallback(() => {
+    if (isAuthenticated) {
+      navigate('/setup');
+    } else {
+      navigate('/');
+    }
+    setIsMenuOpen(false);
+  }, [isAuthenticated, navigate]);
+
   const publicNavItems = useMemo(() => [
     { path: '/', label: 'Home', icon: Home },
     { path: '/ai-interview-preview', label: 'AI Interview Practice', icon: MessageSquare },
@@ -59,8 +68,11 @@ export const Header: React.FC = React.memo(() => {
     <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
+          {/* Logo - Clickable */}
+          <button 
+            onClick={handleLogoClick}
+            className="flex items-center space-x-3 flex-shrink-0 hover:opacity-80 transition-opacity"
+          >
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
               <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
@@ -75,7 +87,7 @@ export const Header: React.FC = React.memo(() => {
                 NS
               </h1>
             </div>
-          </Link>
+          </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
@@ -95,7 +107,8 @@ export const Header: React.FC = React.memo(() => {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <span className="hidden xl:inline">{item.label}</span>
+                  <span className="xl:hidden">{item.label.split(' ')[0]}</span>
                   {isPremiumFeature && <Crown className="w-3 h-3 text-amber-500" />}
                 </Link>
               );
@@ -127,7 +140,8 @@ export const Header: React.FC = React.memo(() => {
                     className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 font-medium text-sm"
                   >
                     <Crown className="w-4 h-4" />
-                    <span>Upgrade Pro</span>
+                    <span className="hidden lg:inline">Upgrade Pro</span>
+                    <span className="lg:hidden">Pro</span>
                   </Link>
                 )}
 
@@ -145,14 +159,20 @@ export const Header: React.FC = React.memo(() => {
                       alt={user?.name}
                       className="w-8 h-8 rounded-full"
                     />
-                    <span className="hidden md:block font-medium text-gray-700 text-sm">{user?.name}</span>
+                    <span className="hidden md:block font-medium text-gray-700 text-sm max-w-24 truncate">{user?.name}</span>
                   </button>
 
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <div className="p-3 border-b border-gray-100">
-                      <p className="font-medium text-gray-900 text-sm">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="font-medium text-gray-900 text-sm truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      {isPremium && (
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Crown className="w-3 h-3 text-amber-500" />
+                          <span className="text-xs text-amber-600 font-medium">Premium Member</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-2">
                       <Link

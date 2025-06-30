@@ -33,9 +33,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored auth data on app load
     const storedUser = localStorage.getItem('neural_sync_user');
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setIsAuthenticated(true);
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log('User restored from localStorage:', userData.email);
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('neural_sync_user');
+        localStorage.removeItem('neural_sync_premium');
+      }
     }
   }, []);
 
@@ -56,6 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
       localStorage.setItem('neural_sync_user', JSON.stringify(userData));
       localStorage.setItem('neural_sync_premium', 'true'); // Auto-grant premium
+      console.log('Premium user logged in:', email);
+      
+      // Trigger a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('premiumStatusChanged', { detail: { isPremium: true } }));
+      
       return true;
     }
     
@@ -71,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('neural_sync_user', JSON.stringify(userData));
+      console.log('Regular user logged in:', email);
       return true;
     }
     
@@ -92,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('neural_sync_user', JSON.stringify(userData));
+      console.log('User registered:', email);
       return true;
     }
     
@@ -103,6 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     localStorage.removeItem('neural_sync_user');
     localStorage.removeItem('neural_sync_premium');
+    console.log('User logged out');
+    
+    // Trigger a custom event to notify other components
+    window.dispatchEvent(new CustomEvent('premiumStatusChanged', { detail: { isPremium: false } }));
   };
 
   return (

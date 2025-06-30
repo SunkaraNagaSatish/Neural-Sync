@@ -91,61 +91,61 @@ export const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-20">
           <div className="text-center">
-            <div className="inline-flex items-center space-x-3 mb-6 sm:mb-8">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
-                <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className="inline-flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6 lg:mb-8">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Neural Sync
                 </h1>
-                <p className="text-sm sm:text-lg text-gray-600">AI Interview Assistant</p>
+                <p className="text-xs sm:text-sm lg:text-lg text-gray-600">AI Interview Assistant</p>
               </div>
             </div>
 
-            <h2 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-6">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-7xl font-bold text-gray-900 mb-3 sm:mb-4 lg:mb-6">
               Ace Your Next
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 {' '}Interview
               </span>
             </h2>
 
-            <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-6 sm:mb-8 max-w-4xl mx-auto px-4">
+            <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-600 mb-4 sm:mb-6 lg:mb-8 max-w-4xl mx-auto px-4">
               Get instant, intelligent AI responses during live interviews. 
               Practice with our AI interviewer and land your dream job with confidence.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 sm:mb-12 px-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-6 sm:mb-8 lg:mb-12 px-4">
               <Link
                 to="/login"
-                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg text-sm sm:text-base"
               >
                 <span>Get Started Free</span>
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
               
               <Link
                 to="/ai-assistant-preview"
-                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 border border-gray-200 shadow-sm"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 border border-gray-200 shadow-sm text-sm sm:text-base"
               >
-                <Play className="w-5 h-5" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Watch Demo</span>
               </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 text-sm text-gray-500 px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 lg:space-x-8 text-xs sm:text-sm text-gray-500 px-4">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                 <span>Free to start</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                 <span>Instant setup</span>
               </div>
             </div>
@@ -154,15 +154,15 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 sm:py-16 bg-white">
+      <section className="py-8 sm:py-12 lg:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                <div className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1 sm:mb-2">
                   {stat.number}
                 </div>
-                <div className="text-sm sm:text-base text-gray-600">{stat.label}</div>
+                <div className="text-xs sm:text-sm lg:text-base text-gray-600">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -170,26 +170,26 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-gray-50 to-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               Why Choose Neural Sync?
             </h3>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
               Advanced AI technology designed specifically for interview success
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-6`}>
-                    <Icon className="w-6 h-6 text-white" />
+                <div key={index} className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-4 sm:mb-6`}>
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
+                  <h4 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
                     {feature.title}
                   </h4>
                   <p className="text-gray-600 text-sm sm:text-base">
@@ -203,73 +203,73 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 sm:py-20 bg-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               How Neural Sync Works
             </h3>
-            <p className="text-lg sm:text-xl text-gray-600">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600">
               Three simple steps to interview success
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-8 sm:gap-12">
+          <div className="grid sm:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Brain className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-3">1. Setup Your Profile</h4>
-              <p className="text-gray-600">Upload your resume and job description to personalize AI responses</p>
+              <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">1. Setup Your Profile</h4>
+              <p className="text-gray-600 text-sm sm:text-base">Upload your resume and job description to personalize AI responses</p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <MessageSquare className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-3">2. Start Your Interview</h4>
-              <p className="text-gray-600">Our AI listens to questions and provides instant, relevant responses</p>
+              <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">2. Start Your Interview</h4>
+              <p className="text-gray-600 text-sm sm:text-base">Our AI listens to questions and provides instant, relevant responses</p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Award className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-3">3. Land Your Dream Job</h4>
-              <p className="text-gray-600">Impress interviewers with confident, well-structured answers</p>
+              <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">3. Land Your Dream Job</h4>
+              <p className="text-gray-600 text-sm sm:text-base">Impress interviewers with confident, well-structured answers</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               Trusted by Top Professionals
             </h3>
-            <p className="text-lg sm:text-xl text-gray-600">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600">
               See what our users say about Neural Sync
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
-                <div className="flex items-center mb-4">
+              <div key={index} className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center mb-3 sm:mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-6 italic text-sm sm:text-base">
+                <p className="text-gray-700 mb-4 sm:mb-6 italic text-sm sm:text-base">
                   "{testimonial.content}"
                 </p>
                 <div className="flex items-center">
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-12 h-12 rounded-full mr-4"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4"
                   />
                   <div>
                     <p className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.name}</p>
@@ -283,27 +283,27 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-indigo-600 to-purple-700">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-indigo-600 to-purple-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4 sm:mb-6">
+          <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 lg:mb-6">
             Ready to Ace Your Next Interview?
           </h3>
-          <p className="text-lg sm:text-xl text-indigo-100 mb-6 sm:mb-8">
+          <p className="text-base sm:text-lg lg:text-xl text-indigo-100 mb-6 sm:mb-8">
             Join thousands of professionals who have successfully landed their dream jobs with Neural Sync
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link
               to="/login"
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
             >
               <span>Start Free Today</span>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
             <Link
               to="/ai-assistant-preview"
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors flex items-center justify-center space-x-2 border border-white/30"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors flex items-center justify-center space-x-2 border border-white/30 text-sm sm:text-base"
             >
-              <Play className="w-5 h-5" />
+              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Watch Demo</span>
             </Link>
           </div>
