@@ -1,15 +1,28 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export const BackButton: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
-  // Don't show back button on home page or login page
-  const hideOnPaths = ['/', '/login'];
+  // Don't show back button on these paths
+  const hideOnPaths = [
+    '/', 
+    '/login', 
+    '/ai-assistant-preview', // Hide on AI assistant preview when logged in
+    '/ai-interview-preview'  // Hide on AI interview preview when logged in
+  ];
   
+  // Hide back button on preview pages when user is authenticated
   if (hideOnPaths.includes(location.pathname)) {
+    return null;
+  }
+
+  // Also hide on preview pages when authenticated
+  if (isAuthenticated && (location.pathname === '/ai-assistant-preview' || location.pathname === '/ai-interview-preview')) {
     return null;
   }
 
@@ -18,8 +31,8 @@ export const BackButton: React.FC = () => {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      // Fallback to home page
-      navigate('/');
+      // Fallback to appropriate page based on auth status
+      navigate(isAuthenticated ? '/setup' : '/');
     }
   };
 

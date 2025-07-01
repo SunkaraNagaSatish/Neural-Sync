@@ -15,6 +15,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoize error messages for better performance
   const errorMessages = useMemo(() => ({
@@ -50,6 +51,13 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         setIsListening(true);
         setError(null);
         console.log('Neural Sync speech recognition started');
+        
+        // Set a timeout to auto-stop after 30 seconds
+        timeoutRef.current = setTimeout(() => {
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+        }, 30000);
       };
 
       recognition.onresult = (event) => {
@@ -85,11 +93,23 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         
         setError(errorMessage);
         setIsListening(false);
+        
+        // Clear timeout on error
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       };
 
       recognition.onend = () => {
         setIsListening(false);
         console.log('Neural Sync speech recognition ended');
+        
+        // Clear timeout on end
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       };
 
       recognitionRef.current = recognition;
@@ -105,6 +125,12 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
     setIsListening(false);
     console.log('Neural Sync speech recognition stopped');
   }, []);

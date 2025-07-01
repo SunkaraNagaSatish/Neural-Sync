@@ -1,7 +1,7 @@
 import React from 'react';
 import { Brain } from 'lucide-react';
 
-export const LoadingSpinner: React.FC = () => {
+export const LoadingSpinner: React.FC = React.memo(() => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
       <div className="text-center">
@@ -13,4 +13,6 @@ export const LoadingSpinner: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+
+LoadingSpinner.displayName = 'LoadingSpinner';
