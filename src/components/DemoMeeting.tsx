@@ -213,6 +213,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
         <div className="grid gap-6 lg:grid-cols-2 sm:gap-8">
           {/* Left Column - Demo Interface */}
           <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Current Step */}
             <div className="p-6 bg-white shadow-lg rounded-2xl sm:p-8">
               <div className="text-center">
@@ -324,6 +325,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
                 {demoStep === 3 && (
                   <div className="space-y-4 sm:space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 text-center bg-indigo-50 rounded-xl">
                         <div className="mb-1 text-xl font-bold text-indigo-600 sm:text-2xl">∞</div>
@@ -356,6 +358,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
                   ) : (
                     <>
                       {demoStep === 3 ? <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      {demoStep === 3 ? <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
                       <span>{demoSteps[demoStep].action}</span>
                     </>
                   )}
@@ -365,6 +368,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
           </div>
 
           {/* Right Column - Features & Benefits */}
+          <div className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Demo Progress */}
             <div className="p-4 bg-white shadow-lg rounded-2xl sm:p-6">
@@ -376,11 +380,14 @@ export const DemoMeeting: React.FC = React.memo(() => {
                     index < demoStep ? 'bg-green-50' : 'bg-gray-50'
                   }`}>
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm ${
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm ${
                       index === demoStep ? 'bg-indigo-600 text-white' :
                       index < demoStep ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
                       {index < demoStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : index + 1}
+                      {index < demoStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : index + 1}
                     </div>
+                    <span className={`font-medium text-sm sm:text-base ${
                     <span className={`font-medium text-sm sm:text-base ${
                       index === demoStep ? 'text-indigo-700' :
                       index < demoStep ? 'text-green-700' : 'text-gray-600'
@@ -398,12 +405,14 @@ export const DemoMeeting: React.FC = React.memo(() => {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Lightning Fast</p>
                     <p className="text-xs text-gray-600 sm:text-sm">Get AI responses in under 1 second</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Highly Accurate</p>
@@ -412,12 +421,14 @@ export const DemoMeeting: React.FC = React.memo(() => {
                 </div>
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Easy to Use</p>
                     <p className="text-xs text-gray-600 sm:text-sm">No complex setup, works instantly</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Proven Results</p>
@@ -447,6 +458,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
       {/* Notification */}
       {notification && (
+        <div className={`fixed top-4 sm:top-20 right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
         <div className={`fixed top-4 sm:top-20 right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>

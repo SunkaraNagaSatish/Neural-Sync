@@ -40,6 +40,15 @@ export const Header: React.FC = React.memo(() => {
     setIsMenuOpen(false);
   }, [isAuthenticated, navigate]);
 
+  const handleLogoClick = useCallback(() => {
+    if (isAuthenticated) {
+      navigate('/setup');
+    } else {
+      navigate('/');
+    }
+    setIsMenuOpen(false);
+  }, [isAuthenticated, navigate]);
+
   const publicNavItems = useMemo(() => [
     { path: '/', label: 'Home', icon: Home },
     { path: '/ai-interview-preview', label: 'AI Interview Practice', icon: MessageSquare },
@@ -88,6 +97,7 @@ export const Header: React.FC = React.memo(() => {
               </h1>
             </div>
           </button>
+          </button>
 
           {/* Desktop Navigation */}
           <nav className="items-center hidden space-x-1 lg:flex">
@@ -107,6 +117,8 @@ export const Header: React.FC = React.memo(() => {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
+                  <span className="hidden xl:inline">{item.label}</span>
+                  <span className="xl:hidden">{item.label.split(' ')[0]}</span>
                   <span className="hidden xl:inline">{item.label}</span>
                   <span className="xl:hidden">{item.label.split(' ')[0]}</span>
                   {isPremiumFeature && <Crown className="w-3 h-3 text-amber-500" />}
@@ -142,6 +154,8 @@ export const Header: React.FC = React.memo(() => {
                     className="items-center hidden px-3 py-2 space-x-2 text-sm font-medium text-white transition-all duration-200 rounded-lg md:flex bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     <Crown className="w-4 h-4" />
+                    <span className="hidden lg:inline">Upgrade Pro</span>
+                    <span className="lg:hidden">Pro</span>
                     <span className="hidden lg:inline">Upgrade Pro</span>
                     <span className="lg:hidden">Pro</span>
                   </Link>

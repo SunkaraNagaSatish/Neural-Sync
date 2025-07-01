@@ -124,12 +124,13 @@ export const LandingPage: React.FC = () => {
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
-              
               <Link
                 to="/ai-assistant-preview"
                 className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-gray-700 transition-colors bg-white border border-gray-200 shadow-sm sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-50 sm:text-base"
               >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                 <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Watch Demo</span>
               </Link>
@@ -298,11 +299,13 @@ export const LandingPage: React.FC = () => {
             >
               <span>Start Free Today</span>
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
             <Link
               to="/ai-assistant-preview"
               className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-colors border sm:w-auto sm:px-8 sm:py-4 bg-white/20 rounded-xl hover:bg-white/30 border-white/30 sm:text-base"
             >
+              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
               <Play className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Watch Demo</span>
             </Link>
