@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { generateInterviewQuestion, evaluateAnswer } from '../services/aiInterviewService';
-import { generateGeminiAnswer } from '../services/geminiService';
-import { TranscriptEntry } from '../types';
+import { generateMeetingResponse } from '../services/geminiService';
+import { TranscriptEntry, MeetingContext } from '../types';
 
 export const DemoMeeting: React.FC = React.memo(() => {
   const navigate = useNavigate();
@@ -118,6 +118,15 @@ export const DemoMeeting: React.FC = React.memo(() => {
       .sort((a, b) => (b.confidence || 0) - (a.confidence || 0) || b.text.length - a.text.length || b.timestamp.getTime() - a.timestamp.getTime())[0].text;
   }
 
+  // Create mock meeting context for demo
+  const createMockContext = useCallback((): MeetingContext => ({
+    jobTitle: `${selectedLevel} ${selectedTech} Developer`,
+    companyName: 'Demo Company',
+    meetingType: 'Technical Interview',
+    resumeText: `Experienced ${selectedTech} developer with strong background in modern web development. Skilled in ${selectedTech}, JavaScript, and related technologies. Passionate about creating efficient, scalable solutions and staying current with industry best practices. Experience includes working on various projects ranging from small applications to enterprise-level systems.`,
+    jobDescription: `We are looking for a talented ${selectedLevel} ${selectedTech} Developer to join our growing team. The ideal candidate will have experience with ${selectedTech} and modern development practices.`
+  }), [selectedTech, selectedLevel]);
+
   // Debounce transcript processing for accuracy and speed
   useEffect(() => {
     async function processQuestion() {
@@ -130,7 +139,13 @@ export const DemoMeeting: React.FC = React.memo(() => {
           setIsLoading(true);
           showNotification('success', 'Question captured! Generating AI answer...');
           try {
-            const aiAnswer = await generateGeminiAnswer(bestText, selectedTech, selectedLevel);
+            const mockContext = createMockContext();
+            const transcriptEntry: TranscriptEntry = {
+              text: bestText,
+              timestamp: new Date(),
+              confidence: 1.0
+            };
+            const aiAnswer = await generateMeetingResponse(mockContext, [transcriptEntry]);
             setAiResponse(aiAnswer);
           } catch (err) {
             setAiResponse('Sorry, there was an error generating the answer.');
@@ -142,7 +157,7 @@ export const DemoMeeting: React.FC = React.memo(() => {
       }
     }
     processQuestion();
-  }, [demoStep, transcript, stopListening, showNotification, selectedTech, selectedLevel]);
+  }, [demoStep, transcript, stopListening, showNotification, createMockContext]);
 
   // Add a timeout fallback for speech recognition
   useEffect(() => {
@@ -212,7 +227,6 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
         <div className="grid gap-6 lg:grid-cols-2 sm:gap-8">
           {/* Left Column - Demo Interface */}
-          <div className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Current Step */}
             <div className="p-6 bg-white shadow-lg rounded-2xl sm:p-8">
@@ -325,7 +339,6 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
                 {demoStep === 3 && (
                   <div className="space-y-4 sm:space-y-6">
-                  <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 text-center bg-indigo-50 rounded-xl">
                         <div className="mb-1 text-xl font-bold text-indigo-600 sm:text-2xl">∞</div>
@@ -358,7 +371,6 @@ export const DemoMeeting: React.FC = React.memo(() => {
                   ) : (
                     <>
                       {demoStep === 3 ? <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
-                      {demoStep === 3 ? <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
                       <span>{demoSteps[demoStep].action}</span>
                     </>
                   )}
@@ -368,7 +380,6 @@ export const DemoMeeting: React.FC = React.memo(() => {
           </div>
 
           {/* Right Column - Features & Benefits */}
-          <div className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Demo Progress */}
             <div className="p-4 bg-white shadow-lg rounded-2xl sm:p-6">
@@ -380,14 +391,11 @@ export const DemoMeeting: React.FC = React.memo(() => {
                     index < demoStep ? 'bg-green-50' : 'bg-gray-50'
                   }`}>
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm ${
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm ${
                       index === demoStep ? 'bg-indigo-600 text-white' :
                       index < demoStep ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
                       {index < demoStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : index + 1}
-                      {index < demoStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : index + 1}
                     </div>
-                    <span className={`font-medium text-sm sm:text-base ${
                     <span className={`font-medium text-sm sm:text-base ${
                       index === demoStep ? 'text-indigo-700' :
                       index < demoStep ? 'text-green-700' : 'text-gray-600'
@@ -405,14 +413,12 @@ export const DemoMeeting: React.FC = React.memo(() => {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Lightning Fast</p>
                     <p className="text-xs text-gray-600 sm:text-sm">Get AI responses in under 1 second</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Highly Accurate</p>
@@ -421,14 +427,12 @@ export const DemoMeeting: React.FC = React.memo(() => {
                 </div>
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Easy to Use</p>
                     <p className="text-xs text-gray-600 sm:text-sm">No complex setup, works instantly</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 sm:text-base">Proven Results</p>
@@ -458,7 +462,6 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 sm:top-20 right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
         <div className={`fixed top-4 sm:top-20 right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>

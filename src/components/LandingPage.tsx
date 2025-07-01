@@ -2,18 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Brain, 
+  MessageSquare, 
   Zap, 
+  Play, 
+  BarChart3, 
+  CheckCircle, 
   Shield, 
   Users, 
   ArrowRight, 
-  CheckCircle,
-  Star,
-  Play,
-  MessageSquare,
-  BarChart3,
-  Clock,
-  Award,
-  Lightbulb
+  Award, 
+  Star
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
