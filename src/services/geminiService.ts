@@ -264,6 +264,32 @@ Format each tip as a bullet point starting with "•"`;
   }
 };
 
+// Generate a direct answer to a question for the demo
+export async function generateGeminiAnswer(question: string, tech: string, level: string): Promise<string> {
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(API_KEY);
+  }
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.6,
+        topK: 15,
+        topP: 0.85,
+        maxOutputTokens: 250,
+        candidateCount: 1,
+      }
+    });
+    const prompt = `You are an expert interviewer. Answer the following question for a ${level} ${tech} candidate:\n\n${question}`;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return text && text.length > 0 ? text : 'Sorry, I could not generate an answer.';
+  } catch (error) {
+    return 'Sorry, there was an error generating the answer.';
+  }
+}
+
 // Optimized test function for faster connection verification
 export const testGeminiConnection = async (): Promise<boolean> => {
   if (!genAI) {

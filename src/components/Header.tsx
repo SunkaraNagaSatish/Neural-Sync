@@ -31,6 +31,15 @@ export const Header: React.FC = React.memo(() => {
     setIsMenuOpen(false);
   }, [logout, navigate]);
 
+  const handleLogoClick = useCallback(() => {
+    if (isAuthenticated) {
+      navigate('/setup');
+    } else {
+      navigate('/');
+    }
+    setIsMenuOpen(false);
+  }, [isAuthenticated, navigate]);
+
   const publicNavItems = useMemo(() => [
     { path: '/', label: 'Home', icon: Home },
     { path: '/ai-interview-preview', label: 'AI Interview Practice', icon: MessageSquare },
@@ -56,29 +65,32 @@ export const Header: React.FC = React.memo(() => {
   }, [navItems, isAuthenticated, isPremium]);
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          {/* Logo - Clickable */}
+          <button 
+            onClick={handleLogoClick}
+            className="flex items-center flex-shrink-0 space-x-3 transition-opacity hover:opacity-80"
+          >
+            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl">
+              <Brain className="w-5 h-5 text-white sm:w-6 sm:h-6" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold text-transparent sm:text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
                 Neural Sync
               </h1>
-              <p className="text-xs text-gray-500 hidden lg:block">AI Interview Assistant</p>
+              <p className="hidden text-xs text-gray-500 lg:block">AI Interview Assistant</p>
             </div>
             <div className="sm:hidden">
-              <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
                 NS
               </h1>
             </div>
-          </Link>
+          </button>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="items-center hidden space-x-1 lg:flex">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -95,7 +107,8 @@ export const Header: React.FC = React.memo(() => {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <span className="hidden xl:inline">{item.label}</span>
+                  <span className="xl:hidden">{item.label.split(' ')[0]}</span>
                   {isPremiumFeature && <Crown className="w-3 h-3 text-amber-500" />}
                 </Link>
               );
@@ -106,58 +119,67 @@ export const Header: React.FC = React.memo(() => {
           <div className="flex items-center space-x-2 sm:space-x-3">
             {!isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <Link
-                  to="/login"
-                  className="px-3 py-2 sm:px-4 sm:py-2 text-gray-700 hover:text-gray-900 transition-colors font-medium text-sm"
+                <button
+                  onClick={() => navigate('/login')}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 transition-colors bg-transparent sm:px-4 sm:py-2 hover:text-gray-900"
+                  style={{ background: 'none', border: 'none' }}
                 >
                   Sign In
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
+                </button>
+                <button
+                  onClick={() => navigate('/login', { state: { showSignUp: true } })}
+                  className="px-3 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg sm:px-4 sm:py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                  style={{ border: 'none' }}
                 >
                   Sign Up
-                </Link>
+                </button>
               </div>
             ) : (
               <>
                 {!isPremium && (
                   <Link
                     to="/premium"
-                    className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 font-medium text-sm"
+                    className="items-center hidden px-3 py-2 space-x-2 text-sm font-medium text-white transition-all duration-200 rounded-lg md:flex bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     <Crown className="w-4 h-4" />
-                    <span>Upgrade Pro</span>
+                    <span className="hidden lg:inline">Upgrade Pro</span>
+                    <span className="lg:hidden">Pro</span>
                   </Link>
                 )}
 
                 {isPremium && (
-                  <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 rounded-full text-sm font-medium">
+                  <div className="items-center hidden px-3 py-1 space-x-2 text-sm font-medium rounded-full md:flex bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700">
                     <Crown className="w-4 h-4" />
                     <span>Pro</span>
                   </div>
                 )}
 
                 <div className="relative group">
-                  <button className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button className="flex items-center p-2 space-x-2 transition-colors rounded-lg hover:bg-gray-100">
                     <img
                       src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
                       alt={user?.name}
                       className="w-8 h-8 rounded-full"
                     />
-                    <span className="hidden md:block font-medium text-gray-700 text-sm">{user?.name}</span>
+                    <span className="hidden text-sm font-medium text-gray-700 truncate md:block max-w-24">{user?.name}</span>
                   </button>
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <div className="absolute right-0 invisible w-48 mt-2 transition-all duration-200 bg-white border border-gray-200 shadow-lg opacity-0 rounded-xl group-hover:opacity-100 group-hover:visible">
                     <div className="p-3 border-b border-gray-100">
-                      <p className="font-medium text-gray-900 text-sm">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      {isPremium && (
+                        <div className="flex items-center mt-1 space-x-1">
+                          <Crown className="w-3 h-3 text-amber-500" />
+                          <span className="text-xs font-medium text-amber-600">Premium Member</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-2">
                       <Link
                         to="/profile"
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                        className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-left text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
                       >
                         <User className="w-4 h-4" />
                         <span>Profile</span>
@@ -165,7 +187,7 @@ export const Header: React.FC = React.memo(() => {
                       {isPremium && (
                         <Link
                           to="/summary"
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                          className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-left text-gray-700 transition-colors rounded-lg hover:bg-gray-100"
                         >
                           <FileText className="w-4 h-4" />
                           <span>Interview Summary</span>
@@ -174,7 +196,7 @@ export const Header: React.FC = React.memo(() => {
                       {!isPremium && (
                         <Link
                           to="/premium"
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-left text-amber-600 hover:bg-amber-50 rounded-lg transition-colors text-sm"
+                          className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-left transition-colors rounded-lg text-amber-600 hover:bg-amber-50"
                         >
                           <Crown className="w-4 h-4" />
                           <span>Upgrade to Pro</span>
@@ -182,7 +204,7 @@ export const Header: React.FC = React.memo(() => {
                       )}
                       <button
                         onClick={handleLogout}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
+                        className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-left text-red-600 transition-colors rounded-lg hover:bg-red-50"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Logout</span>
@@ -196,7 +218,7 @@ export const Header: React.FC = React.memo(() => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 transition-colors rounded-lg lg:hidden hover:bg-gray-100"
             >
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -205,7 +227,7 @@ export const Header: React.FC = React.memo(() => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 py-4">
+          <div className="py-4 border-t border-gray-200 lg:hidden">
             <nav className="space-y-2">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
@@ -234,7 +256,7 @@ export const Header: React.FC = React.memo(() => {
                 <Link
                   to="/premium"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium mx-4"
+                  className="flex items-center px-4 py-3 mx-4 space-x-2 font-medium text-white rounded-lg bg-gradient-to-r from-amber-500 to-orange-500"
                 >
                   <Crown className="w-4 h-4" />
                   <span>Upgrade Pro</span>

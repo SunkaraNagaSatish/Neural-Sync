@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Brain, 
   Mail, 
@@ -16,7 +16,15 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 export const LoginScreen: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  // Check for showSignUp in location.state
+  const showSignUp = location.state && location.state.showSignUp;
+  const [isLogin, setIsLogin] = useState(!showSignUp);
+
+  useEffect(() => {
+    setIsLogin(!showSignUp);
+  }, [showSignUp]);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -44,7 +52,7 @@ export const LoginScreen: React.FC = () => {
       }
 
       if (success) {
-        navigate('/setup');
+        navigate('/setup', { replace: true });
       } else {
         setError('Invalid credentials. Please try again.');
       }
@@ -66,13 +74,13 @@ export const LoginScreen: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex">
+    <div className="flex min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Left Side - Features */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 to-purple-700 p-12 flex-col justify-center">
+      <div className="flex-col justify-center hidden p-12 lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 to-purple-700">
         <div className="max-w-md">
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-              <Brain className="w-7 h-7 text-white" />
+          <div className="flex items-center mb-8 space-x-3">
+            <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-2xl">
+              <Brain className="text-white w-7 h-7" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Neural Sync</h1>
@@ -80,11 +88,11 @@ export const LoginScreen: React.FC = () => {
             </div>
           </div>
 
-          <h2 className="text-4xl font-bold text-white mb-6">
+          <h2 className="mb-6 text-4xl font-bold text-white">
             Ace Your Next Interview with AI
           </h2>
           
-          <p className="text-xl text-indigo-100 mb-8">
+          <p className="mb-8 text-xl text-indigo-100">
             Get instant, intelligent responses during interviews with our advanced neural AI technology.
           </p>
 
@@ -93,24 +101,24 @@ export const LoginScreen: React.FC = () => {
               const Icon = feature.icon;
               return (
                 <div key={index} className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl">
                     <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{feature.title}</h3>
-                    <p className="text-indigo-200 text-sm">{feature.desc}</p>
+                    <p className="text-sm text-indigo-200">{feature.desc}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-8 p-4 bg-white/10 rounded-xl border border-white/20">
-            <div className="flex items-center space-x-2 mb-2">
+          <div className="p-4 mt-8 border bg-white/10 rounded-xl border-white/20">
+            <div className="flex items-center mb-2 space-x-2">
               <CheckCircle className="w-5 h-5 text-green-300" />
-              <span className="text-white font-medium">Free Demo Available</span>
+              <span className="font-medium text-white">Free Demo Available</span>
             </div>
-            <p className="text-indigo-200 text-sm">
+            <p className="text-sm text-indigo-200">
               Try our 3-minute demo to experience the power of Neural Sync AI
             </p>
           </div>
@@ -118,16 +126,16 @@ export const LoginScreen: React.FC = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="flex items-center justify-center w-full p-8 lg:w-1/2">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
-                <Brain className="w-7 h-7 text-white" />
+          <div className="mb-8 text-center lg:hidden">
+            <div className="inline-flex items-center mb-4 space-x-3">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl">
+                <Brain className="text-white w-7 h-7" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
                   Neural Sync
                 </h1>
                 <p className="text-sm text-gray-600">AI Interview Assistant</p>
@@ -135,9 +143,9 @@ export const LoginScreen: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="p-8 border shadow-2xl bg-white/80 backdrop-blur-sm rounded-3xl border-white/20">
+            <div className="mb-8 text-center">
+              <h2 className="mb-2 text-3xl font-bold text-gray-900">
                 {isLogin ? 'Welcome Back' : 'Create Account'}
               </h2>
               <p className="text-gray-600">
@@ -149,7 +157,7 @@ export const LoginScreen: React.FC = () => {
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+              <div className="p-4 mb-6 text-sm text-red-700 border border-red-200 bg-red-50 rounded-xl">
                 {error}
               </div>
             )}
@@ -157,14 +165,14 @@ export const LoginScreen: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {!isLogin && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
                     Full Name
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors"
+                    className="w-full px-4 py-3 transition-colors border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                     placeholder="Enter your full name"
                     required={!isLogin}
                   />
@@ -172,16 +180,16 @@ export const LoginScreen: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors"
+                    className="w-full py-3 pl-12 pr-4 transition-colors border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                     placeholder="Enter your email"
                     required
                   />
@@ -189,23 +197,23 @@ export const LoginScreen: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className="w-full pl-12 pr-12 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors"
+                    className="w-full py-3 pl-12 pr-12 transition-colors border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                     placeholder="Enter your password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -215,7 +223,7 @@ export const LoginScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -236,17 +244,17 @@ export const LoginScreen: React.FC = () => {
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button
                   onClick={() => setIsLogin(!isLogin)}
-                  className="ml-2 text-indigo-600 hover:text-indigo-700 font-medium"
+                  className="ml-2 font-medium text-indigo-600 hover:text-indigo-700"
                 >
                   {isLogin ? 'Sign Up' : 'Sign In'}
                 </button>
               </p>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="pt-6 mt-6 border-t border-gray-200">
               <button
                 onClick={handleDemoClick}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2"
+                className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-gray-700 transition-colors bg-gray-100 hover:bg-gray-200 rounded-xl"
               >
                 <span>Try 3-Minute Demo</span>
                 <ArrowRight className="w-4 h-4" />

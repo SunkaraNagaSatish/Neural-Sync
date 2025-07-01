@@ -16,16 +16,31 @@ import {
   Volume2,
   MicOff
 } from 'lucide-react';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { generateInterviewQuestion, evaluateAnswer } from '../services/aiInterviewService';
+import { generateGeminiAnswer } from '../services/geminiService';
+import { TranscriptEntry } from '../types';
 
 export const DemoMeeting: React.FC = React.memo(() => {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
   const [isActive, setIsActive] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
-  const [isListening, setIsListening] = useState(false);
   const [capturedQuestion, setCapturedQuestion] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedTech, setSelectedTech] = useState('React');
+  const [selectedLevel, setSelectedLevel] = useState('Entry Level');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    isListening: speechListening,
+    transcript,
+    startListening,
+    stopListening,
+    clearTranscript,
+    error: speechError
+  } = useSpeechRecognition();
 
   const demoSteps = useMemo(() => [
     {
@@ -90,38 +105,78 @@ export const DemoMeeting: React.FC = React.memo(() => {
     showNotification('success', 'Demo started! You have 3 minutes to explore.');
   }, [showNotification]);
 
-  const simulateVoiceRecognition = useCallback(() => {
-    setIsListening(true);
+  // Add a ref to track if we've already processed a question
+  const hasProcessedRef = React.useRef(false);
+
+  // Helper: get the most confident, longest, or most recent transcript
+  function getBestTranscript(transcript: TranscriptEntry[]): string {
+    if (!transcript || transcript.length === 0) return '';
+    const filtered = transcript.filter(t => (t.text.length > 2) && (t.confidence === undefined || t.confidence > 0.7));
+    if (filtered.length === 0) return transcript[transcript.length - 1].text;
+    return filtered
+      .slice()
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0) || b.text.length - a.text.length || b.timestamp.getTime() - a.timestamp.getTime())[0].text;
+  }
+
+  // Debounce transcript processing for accuracy and speed
+  useEffect(() => {
+    async function processQuestion() {
+      if (demoStep === 1 && !hasProcessedRef.current && transcript.length > 0) {
+        const bestText = getBestTranscript(transcript);
+        if (bestText && bestText.length > 2) {
+          hasProcessedRef.current = true;
+          setCapturedQuestion(bestText);
+          stopListening();
+          setIsLoading(true);
+          showNotification('success', 'Question captured! Generating AI answer...');
+          try {
+            const aiAnswer = await generateGeminiAnswer(bestText, selectedTech, selectedLevel);
+            setAiResponse(aiAnswer);
+          } catch (err) {
+            setAiResponse('Sorry, there was an error generating the answer.');
+          }
+          setIsLoading(false);
+          setDemoStep(2);
+          showNotification('success', 'AI response ready!');
+        }
+      }
+    }
+    processQuestion();
+  }, [demoStep, transcript, stopListening, showNotification, selectedTech, selectedLevel]);
+
+  // Add a timeout fallback for speech recognition
+  useEffect(() => {
+    if (demoStep === 1 && speechListening) {
+      const timeout = setTimeout(() => {
+        if (speechListening) {
+          stopListening();
+          showNotification('error', 'Speech recognition timed out. Please try again.');
+        }
+      }, 5000); // 5 seconds max listening
+      return () => clearTimeout(timeout);
+    }
+  }, [demoStep, speechListening, stopListening, showNotification]);
+
+  const handleStartListening = () => {
+    clearTranscript();
+    setCapturedQuestion('');
+    setAiResponse('');
+    hasProcessedRef.current = false;
+    startListening();
     showNotification('success', 'Listening for your question...');
-    
-    // Simulate speech recognition
-    setTimeout(() => {
-      const randomQuestion = sampleQuestions[Math.floor(Math.random() * sampleQuestions.length)];
-      setCapturedQuestion(randomQuestion);
-      setIsListening(false);
-      showNotification('success', 'Question captured! AI is generating response...');
-      
-      // Simulate AI response generation
-      setTimeout(() => {
-        const randomResponse = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
-        setAiResponse(randomResponse);
-        setDemoStep(2);
-        showNotification('success', 'AI response ready! This is how fast Neural Sync works.');
-      }, 1500);
-    }, 2000);
-  }, [sampleQuestions, sampleResponses, showNotification]);
+  };
 
   const nextStep = useCallback(() => {
     if (demoStep < demoSteps.length - 1) {
       if (demoStep === 1) {
-        simulateVoiceRecognition();
+        // simulateVoiceRecognition();
       } else {
         setDemoStep(demoStep + 1);
       }
     } else {
       navigate('/login');
     }
-  }, [demoStep, demoSteps.length, simulateVoiceRecognition, navigate]);
+  }, [demoStep, demoSteps.length, navigate]);
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -133,139 +188,156 @@ export const DemoMeeting: React.FC = React.memo(() => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Demo Timer */}
       {isActive && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-white rounded-full shadow-lg px-6 py-3 flex items-center space-x-3">
-            <Clock className="w-5 h-5 text-indigo-600" />
-            <span className="font-bold text-indigo-600">Demo Time: {formatTime(timeLeft)}</span>
+        <div className="fixed z-50 transform -translate-x-1/2 top-4 left-1/2">
+          <div className="flex items-center px-4 py-2 space-x-2 bg-white rounded-full shadow-lg sm:px-6 sm:py-3 sm:space-x-3">
+            <Clock className="w-4 h-4 text-indigo-600 sm:w-5 sm:h-5" />
+            <span className="text-sm font-bold text-indigo-600 sm:text-base">Demo Time: {formatTime(timeLeft)}</span>
           </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl px-4 py-6 mx-auto sm:py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
-            <Brain className="w-8 h-8 text-white" />
+        <div className="mb-8 text-center sm:mb-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 mb-4 shadow-lg sm:w-16 sm:h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl sm:mb-6">
+            <Brain className="w-6 h-6 text-white sm:w-8 sm:h-8" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+          <h1 className="mb-2 text-3xl font-bold text-transparent sm:text-4xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text sm:mb-4">
             Neural Sync Demo
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="max-w-2xl px-4 mx-auto text-lg text-gray-600 sm:text-xl">
             Experience the power of AI-assisted interviews in just 3 minutes
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid gap-6 lg:grid-cols-2 sm:gap-8">
           {/* Left Column - Demo Interface */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Current Step */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="p-6 bg-white shadow-lg rounded-2xl sm:p-8">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                <h2 className="mb-3 text-xl font-bold text-gray-900 sm:text-2xl sm:mb-4">
                   {demoSteps[demoStep].title}
                 </h2>
-                <p className="text-gray-600 mb-8">
+                <p className="mb-6 text-sm text-gray-600 sm:mb-8 sm:text-base">
                   {demoSteps[demoStep].description}
                 </p>
 
                 {demoStep === 0 && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="p-4 bg-indigo-50 rounded-xl">
-                        <Zap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
-                        <p className="text-sm font-medium text-indigo-800">Ultra-Fast AI</p>
-                      </div>
-                      <div className="p-4 bg-purple-50 rounded-xl">
-                        <Brain className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                        <p className="text-sm font-medium text-purple-800">Smart Responses</p>
-                      </div>
-                      <div className="p-4 bg-emerald-50 rounded-xl">
-                        <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                        <p className="text-sm font-medium text-emerald-800">Real-time Help</p>
-                      </div>
-                    </div>
+                  <div className="flex flex-col items-center justify-center gap-4 mb-6 sm:flex-row">
+                    <select value={selectedTech} onChange={e => setSelectedTech(e.target.value)} className="px-3 py-2 border rounded">
+                      <option value="React">React</option>
+                      <option value="JavaScript">JavaScript</option>
+                      <option value="Python">Python</option>
+                      <option value="Node.js">Node.js</option>
+                      <option value="Java">Java</option>
+                      <option value="C++">C++</option>
+                      <option value="Machine Learning">Machine Learning</option>
+                      <option value="Data Science">Data Science</option>
+                      <option value="DevOps">DevOps</option>
+                      <option value="Cloud Computing">Cloud Computing</option>
+                      <option value="Mobile Development">Mobile Development</option>
+                      <option value="System Design">System Design</option>
+                      <option value="Database Design">Database Design</option>
+                    </select>
+                    <select value={selectedLevel} onChange={e => setSelectedLevel(e.target.value)} className="px-3 py-2 border rounded">
+                      <option value="Entry Level">Entry Level</option>
+                      <option value="Mid Level">Mid Level</option>
+                      <option value="Senior Level">Senior Level</option>
+                    </select>
                   </div>
                 )}
 
                 {demoStep === 1 && (
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="p-4 border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl sm:p-6">
                       <div className="flex items-center justify-center mb-4">
-                        {isListening ? (
+                        {speechListening ? (
                           <>
-                            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                            <span className="text-indigo-700 font-medium">Listening for questions...</span>
+                            <div className="w-3 h-3 mr-2 bg-red-500 rounded-full sm:w-4 sm:h-4 animate-pulse"></div>
+                            <span className="text-sm font-medium text-indigo-700 sm:text-base">Listening for questions...</span>
                           </>
                         ) : capturedQuestion ? (
                           <>
-                            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                            <span className="text-green-700 font-medium">Question captured!</span>
+                            <CheckCircle className="w-4 h-4 mr-2 text-green-500 sm:w-5 sm:h-5" />
+                            <span className="text-sm font-medium text-green-700 sm:text-base">Question captured!</span>
                           </>
                         ) : (
                           <>
-                            <Mic className="w-5 h-5 text-indigo-500 mr-2" />
-                            <span className="text-indigo-700 font-medium">Ready to capture speech</span>
+                            <Mic className="w-4 h-4 mr-2 text-indigo-500 sm:w-5 sm:h-5" />
+                            <span className="text-sm font-medium text-indigo-700 sm:text-base">Ready to capture speech</span>
                           </>
                         )}
                       </div>
                       {capturedQuestion && (
-                        <p className="text-gray-700 italic bg-white/50 p-3 rounded-lg">
+                        <p className="p-3 text-sm italic text-gray-700 rounded-lg bg-white/50 sm:text-base">
                           "{capturedQuestion}"
                         </p>
                       )}
+                      {!speechListening && !capturedQuestion && (
+                        <button
+                          onClick={handleStartListening}
+                          className="flex items-center justify-center px-4 py-2 mt-4 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                        >
+                          <Mic className="w-4 h-4 mr-2" /> Start Listening
+                        </button>
+                      )}
+                      {speechError && (
+                        <p className="mt-2 text-xs text-red-600">{speechError}</p>
+                      )}
                     </div>
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Volume2 className="w-5 h-5 text-green-500" />
+                    <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                      <div className="flex items-center mb-3 space-x-3">
+                        <Volume2 className="w-4 h-4 text-green-500 sm:w-5 sm:h-5" />
                         <span className="text-sm font-medium text-gray-700">Speech Recognition</span>
                       </div>
-                      <p className="text-sm text-gray-600">Neural Sync automatically captures interview questions in real-time</p>
+                      <p className="text-xs text-gray-600 sm:text-sm">Neural Sync automatically captures interview questions in real-time</p>
                     </div>
                   </div>
                 )}
 
                 {demoStep === 2 && (
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="p-4 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl sm:p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-bold text-green-600 uppercase tracking-wide bg-green-100 px-2 py-1 rounded-full">
+                        <span className="px-2 py-1 text-xs font-bold tracking-wide text-green-600 uppercase bg-green-100 rounded-full">
                           AI Response (Generated in 847ms)
                         </span>
-                        <Zap className="w-5 h-5 text-green-500" />
+                        <Zap className="w-4 h-4 text-green-500 sm:w-5 sm:h-5" />
                       </div>
                       <div className="text-left">
-                        <p className="text-xs text-gray-600 font-medium mb-2">Question:</p>
-                        <p className="text-sm text-gray-700 italic mb-4 bg-white/50 p-2 rounded">"{capturedQuestion}"</p>
-                        <p className="text-xs text-gray-600 font-medium mb-2">AI Response:</p>
-                        <p className="text-gray-900 leading-relaxed">{aiResponse}</p>
+                        <p className="mb-2 text-xs font-medium text-gray-600">Question:</p>
+                        <p className="p-2 mb-4 text-sm italic text-gray-700 rounded bg-white/50">"{capturedQuestion}"</p>
+                        <p className="mb-2 text-xs font-medium text-gray-600">AI Response:</p>
+                        <p className="text-sm leading-relaxed text-gray-900 sm:text-base">{aiResponse}</p>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Brain className="w-5 h-5 text-purple-500" />
+                    <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                      <div className="flex items-center mb-3 space-x-3">
+                        <Brain className="w-4 h-4 text-purple-500 sm:w-5 sm:h-5" />
                         <span className="text-sm font-medium text-gray-700">AI Processing</span>
                       </div>
-                      <p className="text-sm text-gray-600">Contextual responses based on your resume and job description</p>
+                      <p className="text-xs text-gray-600 sm:text-sm">Contextual responses based on your resume and job description</p>
                     </div>
                   </div>
                 )}
 
                 {demoStep === 3 && (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-indigo-50 rounded-xl">
-                        <div className="text-2xl font-bold text-indigo-600 mb-1">∞</div>
-                        <div className="text-sm text-indigo-800">Unlimited with Premium</div>
+                      <div className="p-4 text-center bg-indigo-50 rounded-xl">
+                        <div className="mb-1 text-xl font-bold text-indigo-600 sm:text-2xl">∞</div>
+                        <div className="text-xs text-indigo-800 sm:text-sm">Unlimited with Premium</div>
                       </div>
-                      <div className="text-center p-4 bg-purple-50 rounded-xl">
-                        <div className="text-2xl font-bold text-purple-600 mb-1">24/7</div>
-                        <div className="text-sm text-purple-800">AI Assistance</div>
+                      <div className="p-4 text-center bg-purple-50 rounded-xl">
+                        <div className="mb-1 text-xl font-bold text-purple-600 sm:text-2xl">24/7</div>
+                        <div className="text-xs text-purple-800 sm:text-sm">AI Assistance</div>
                       </div>
                     </div>
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                    <div className="p-4 border bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border-amber-200">
                       <div className="flex items-center justify-center space-x-2 text-amber-700">
-                        <Crown className="w-5 h-5" />
-                        <span className="font-medium">Premium features require subscription</span>
+                        <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-sm font-medium sm:text-base">Premium features require subscription</span>
                       </div>
                     </div>
                   </div>
@@ -273,17 +345,17 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
                 <button
                   onClick={demoStep === 0 ? startDemo : nextStep}
-                  disabled={isListening}
-                  className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto font-semibold"
+                  disabled={speechListening}
+                  className="flex items-center justify-center w-full px-6 py-3 mx-auto space-x-2 text-sm font-semibold text-white transition-all duration-200 sm:w-auto sm:px-8 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed sm:text-base"
                 >
-                  {isListening ? (
+                  {speechListening ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white rounded-full sm:w-5 sm:h-5 border-t-transparent animate-spin" />
                       <span>Processing...</span>
                     </>
                   ) : (
                     <>
-                      {demoStep === 3 ? <ArrowRight className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      {demoStep === 3 ? <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
                       <span>{demoSteps[demoStep].action}</span>
                     </>
                   )}
@@ -293,23 +365,23 @@ export const DemoMeeting: React.FC = React.memo(() => {
           </div>
 
           {/* Right Column - Features & Benefits */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Demo Progress */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Demo Progress</h3>
+            <div className="p-4 bg-white shadow-lg rounded-2xl sm:p-6">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Demo Progress</h3>
               <div className="space-y-3">
                 {demoSteps.map((step, index) => (
                   <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg ${
                     index === demoStep ? 'bg-indigo-50 border border-indigo-200' : 
                     index < demoStep ? 'bg-green-50' : 'bg-gray-50'
                   }`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm ${
                       index === demoStep ? 'bg-indigo-600 text-white' :
                       index < demoStep ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
-                      {index < demoStep ? <CheckCircle className="w-4 h-4" /> : index + 1}
+                      {index < demoStep ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : index + 1}
                     </div>
-                    <span className={`font-medium ${
+                    <span className={`font-medium text-sm sm:text-base ${
                       index === demoStep ? 'text-indigo-700' :
                       index < demoStep ? 'text-green-700' : 'text-gray-600'
                     }`}>
@@ -321,49 +393,49 @@ export const DemoMeeting: React.FC = React.memo(() => {
             </div>
 
             {/* Why Choose Neural Sync */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Why Choose Neural Sync?</h3>
+            <div className="p-4 bg-white shadow-lg rounded-2xl sm:p-6">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Why Choose Neural Sync?</h3>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-gray-900">Lightning Fast</p>
-                    <p className="text-sm text-gray-600">Get AI responses in under 1 second</p>
+                    <p className="text-sm font-medium text-gray-900 sm:text-base">Lightning Fast</p>
+                    <p className="text-xs text-gray-600 sm:text-sm">Get AI responses in under 1 second</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-gray-900">Highly Accurate</p>
-                    <p className="text-sm text-gray-600">Context-aware responses tailored to your background</p>
+                    <p className="text-sm font-medium text-gray-900 sm:text-base">Highly Accurate</p>
+                    <p className="text-xs text-gray-600 sm:text-sm">Context-aware responses tailored to your background</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-gray-900">Easy to Use</p>
-                    <p className="text-sm text-gray-600">No complex setup, works instantly</p>
+                    <p className="text-sm font-medium text-gray-900 sm:text-base">Easy to Use</p>
+                    <p className="text-xs text-gray-600 sm:text-sm">No complex setup, works instantly</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-gray-900">Proven Results</p>
-                    <p className="text-sm text-gray-600">Trusted by 10,000+ professionals</p>
+                    <p className="text-sm font-medium text-gray-900 sm:text-base">Proven Results</p>
+                    <p className="text-xs text-gray-600 sm:text-sm">Trusted by 10,000+ professionals</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Call to Action */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-6 text-white text-center">
-              <h3 className="text-xl font-bold mb-2">Ready to Get Started?</h3>
-              <p className="text-indigo-100 mb-4">
+            <div className="p-4 text-center text-white bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl sm:p-6">
+              <h3 className="mb-2 text-lg font-bold sm:text-xl">Ready to Get Started?</h3>
+              <p className="mb-4 text-sm text-indigo-100 sm:text-base">
                 Sign up for free and get 5 AI responses per day
               </p>
               <button
                 onClick={() => navigate('/login')}
-                className="px-6 py-3 bg-white text-indigo-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center space-x-2 mx-auto"
+                className="flex items-center justify-center w-full px-4 py-2 mx-auto space-x-2 text-sm font-semibold text-indigo-600 transition-colors bg-white rounded-lg sm:w-auto sm:px-6 sm:py-3 hover:bg-gray-100 sm:text-base"
               >
                 <span>Sign Up Free</span>
                 <ArrowRight className="w-4 h-4" />
@@ -375,15 +447,15 @@ export const DemoMeeting: React.FC = React.memo(() => {
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-20 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-md ${
+        <div className={`fixed top-4 sm:top-20 right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>
           {notification.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <CheckCircle className="flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <AlertCircle className="flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
           )}
-          <span className="text-sm font-medium">{notification.message}</span>
+          <span className="text-xs font-medium sm:text-sm">{notification.message}</span>
         </div>
       )}
     </div>

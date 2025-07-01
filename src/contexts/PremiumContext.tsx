@@ -31,16 +31,45 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
   ];
 
   useEffect(() => {
-    // Check for premium status
-    const premiumStatus = localStorage.getItem('neural_sync_premium');
-    if (premiumStatus === 'true') {
-      setIsPremium(true);
-    }
-  }, []);
+    // Check for premium status immediately
+    const checkPremiumStatus = () => {
+      const premiumStatus = localStorage.getItem('neural_sync_premium');
+      const newIsPremium = premiumStatus === 'true';
+      
+      if (newIsPremium !== isPremium) {
+        setIsPremium(newIsPremium);
+        console.log('Premium status updated:', newIsPremium);
+      }
+    };
+
+    // Check immediately
+    checkPremiumStatus();
+
+    // Listen for premium status changes
+    const handlePremiumStatusChange = (event: CustomEvent) => {
+      const newIsPremium = event.detail.isPremium;
+      setIsPremium(newIsPremium);
+      console.log('Premium status changed via event:', newIsPremium);
+    };
+
+    window.addEventListener('premiumStatusChanged', handlePremiumStatusChange as EventListener);
+
+    // Also check periodically in case of external changes
+    const interval = setInterval(checkPremiumStatus, 1000);
+
+    return () => {
+      window.removeEventListener('premiumStatusChanged', handlePremiumStatusChange as EventListener);
+      clearInterval(interval);
+    };
+  }, [isPremium]);
 
   const upgradeToPremium = () => {
     setIsPremium(true);
     localStorage.setItem('neural_sync_premium', 'true');
+    console.log('Upgraded to premium');
+    
+    // Trigger a custom event to notify other components
+    window.dispatchEvent(new CustomEvent('premiumStatusChanged', { detail: { isPremium: true } }));
   };
 
   const checkPremiumAccess = (feature: string): boolean => {
