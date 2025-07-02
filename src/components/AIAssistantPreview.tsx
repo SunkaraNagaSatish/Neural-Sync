@@ -1,22 +1,17 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Brain, 
-  Zap, 
-  Mic, 
-  FileText, 
-  ArrowRight, 
+import {
+  Brain,
+  Zap,
+  Mic,
+  FileText,
+  ArrowRight,
   CheckCircle,
   Shield,
   Clock,
   BarChart3,
   Crown,
   Users,
-  Award,
-  Send,
-  MicOff,
-  AlertCircle
   Award,
   Send,
   MicOff,
@@ -71,7 +66,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
     }
 
     const question = questionText || manualQuestion.trim() || (transcript.length > 0 ? transcript[transcript.length - 1]?.text : '');
-    
+
     if (!question) {
       showNotification('error', 'Please provide a question either by speaking or typing');
       return;
@@ -91,111 +86,11 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
 
       const response = await generateMeetingResponse(demoContext, [transcriptEntry]);
       const endTime = Date.now();
-      
+
       setAiResponse(response);
       setManualQuestion('');
       clearTranscript();
-      
-      showNotification('success', `AI response generated in ${endTime - startTime}ms!`);
-    } catch (error) {
-      console.error('Error generating AI response:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate AI response';
-      showNotification('error', errorMessage);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [isAuthenticated, isPremium, manualQuestion, transcript, demoContext, showNotification, clearTranscript]);
 
-  const handleManualSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (manualQuestion.trim()) {
-      handleGenerateResponse(manualQuestion.trim());
-    }
-  }, [manualQuestion, handleGenerateResponse]);
-
-  const handleSpeechResponse = useCallback(() => {
-    if (transcript.length > 0) {
-      const lastTranscript = transcript[transcript.length - 1];
-      handleGenerateResponse(lastTranscript.text);
-    }
-  }, [transcript, handleGenerateResponse]);
-
-  // Memoized feature data for better performance
-  const features = useMemo(() => [
-import { useAuth } from '../contexts/AuthContext';
-import { usePremium } from '../contexts/PremiumContext';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { generateMeetingResponse } from '../services/geminiService';
-import { MeetingContext, TranscriptEntry } from '../types';
-
-export const AIAssistantPreview: React.FC = React.memo(() => {
-  const { isAuthenticated } = useAuth();
-  const { isPremium } = usePremium();
-  const [manualQuestion, setManualQuestion] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    clearTranscript,
-    error: speechError
-  } = useSpeechRecognition();
-
-  // Memoized demo context for better performance
-  const demoContext = useMemo((): MeetingContext => ({
-    jobTitle: 'Software Engineer',
-    companyName: 'Demo Company',
-    meetingType: 'Technical Interview',
-    resumeText: 'Experienced software engineer with expertise in React, Node.js, and modern web development. Strong background in building scalable applications and working with cross-functional teams.',
-    jobDescription: 'We are looking for a talented software engineer to join our growing team.'
-  }), []);
-
-  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
-  }, []);
-
-  const handleGenerateResponse = useCallback(async (questionText?: string) => {
-    if (!isAuthenticated) {
-      showNotification('error', 'Please sign in to use AI responses');
-      return;
-    }
-
-    if (!isPremium) {
-      showNotification('error', 'Premium feature required. Please upgrade to access AI responses.');
-      return;
-    }
-
-    const question = questionText || manualQuestion.trim() || (transcript.length > 0 ? transcript[transcript.length - 1]?.text : '');
-    
-    if (!question) {
-      showNotification('error', 'Please provide a question either by speaking or typing');
-      return;
-    }
-
-    setIsGenerating(true);
-    const startTime = Date.now();
-
-    try {
-      // Create a transcript entry for the AI service
-      const transcriptEntry: TranscriptEntry = {
-        id: Date.now().toString(),
-        text: question,
-        timestamp: new Date(),
-        confidence: 1.0
-      };
-
-      const response = await generateMeetingResponse(demoContext, [transcriptEntry]);
-      const endTime = Date.now();
-      
-      setAiResponse(response);
-      setManualQuestion('');
-      clearTranscript();
-      
       showNotification('success', `AI response generated in ${endTime - startTime}ms!`);
     } catch (error) {
       console.error('Error generating AI response:', error);
@@ -247,9 +142,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
       color: 'from-red-500 to-pink-500'
     }
   ], []);
-  ], []);
 
-  const howItWorks = useMemo(() => [
   const howItWorks = useMemo(() => [
     {
       step: '1',
@@ -270,9 +163,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
       icon: Zap
     }
   ], []);
-  ], []);
 
-  const benefits = useMemo(() => [
   const benefits = useMemo(() => [
     {
       icon: Clock,
@@ -290,9 +181,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
       description: 'Join 95% of users who received job offers after using Neural Sync'
     }
   ], []);
-  ], []);
 
-  const testimonials = useMemo(() => [
   const testimonials = useMemo(() => [
     {
       name: 'Alex Chen',
@@ -307,7 +196,6 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=maria'
     }
   ], []);
-  ], []);
 
   return (
     <div className="min-h-screen py-8 bg-gradient-to-br from-indigo-50 via-white to-purple-50 sm:py-12">
@@ -321,7 +209,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
             AI Interview Assistant
           </h1>
           <p className="max-w-3xl mx-auto text-lg text-gray-600 sm:text-xl">
-            Get instant, intelligent AI responses during live interviews. Our advanced neural AI listens to questions 
+            Get instant, intelligent AI responses during live interviews. Our advanced neural AI listens to questions
             and provides personalized answers based on your background.
           </p>
         </div>
@@ -332,7 +220,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
             <h2 className="mb-6 text-2xl font-bold text-center text-gray-900 sm:text-3xl">
               Try AI Assistant Live
             </h2>
-            
+
             {/* Speech Recognition */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -355,7 +243,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
                       <span>Stop Listening</span>
                     </button>
                   )}
-                  
+
                   {transcript.length > 0 && (
                     <button
                       onClick={handleSpeechResponse}
@@ -382,7 +270,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
                 ) : (
                   <div className="text-gray-500">Click "Start Listening" to capture questions via voice</div>
                 )}
-                
+
                 {speechError && (
                   <div className="flex items-center mt-2 text-red-600">
                     <AlertCircle className="w-4 h-4 mr-2" />
@@ -446,9 +334,7 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
                 </Link>
               </div>
             )}
-            )}
           </div>
-        )}
         )}
 
         {/* Features Grid */}
@@ -604,7 +490,6 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
               className="flex items-center justify-center px-6 py-3 space-x-2 font-semibold text-indigo-600 transition-colors bg-white sm:px-8 sm:py-4 rounded-xl hover:bg-gray-100"
             >
               <span>{isAuthenticated ? "Start Session" : "Start Free Trial"}</span>
-              <span>{isAuthenticated ? "Start Session" : "Start Free Trial"}</span>
               <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
@@ -640,9 +525,6 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
       )}
     </div>
   );
-});
-
-AIAssistantPreview.displayName = 'AIAssistantPreview';
 });
 
 AIAssistantPreview.displayName = 'AIAssistantPreview';
