@@ -3,10 +3,11 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // IMPORTANT: Set the base path for GitHub Pages deployment.
-  // This should be your repository name with leading and trailing slashes.
-  // For your repository 'Neural-Sync', the base path is '/Neural-Sync/'.
-  base: '/Neural-Sync/',
+  // For Vercel deployment, the 'base' property is usually not needed
+  // as Vercel serves from the root of its domain.
+  // If your app works locally without it, you can remove it.
+  // If you were deploying to GitHub Pages, you would use:
+  // base: '/Neural-Sync/',
 
   plugins: [react()],
 
