@@ -14,10 +14,8 @@ import {
   FileText,
   BarChart3,
   Play,
-  Pause,
   Send,
-  Crown,
-  Lock
+  Crown
 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { MeetingContext, AIResponse } from '../types';
@@ -143,7 +141,10 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
       return;
     }
 
-    const questionToUse = questionText || (transcript.length > 0 ? transcript[transcript.length - 1]?.text : '') || manualQuestion.trim();
+    // Always prioritize manual input if present
+    const questionToUse = questionText && questionText.trim()
+      ? questionText.trim()
+      : (transcript.length > 0 ? transcript[transcript.length - 1]?.text : '');
     
     if (!questionToUse) {
       showNotification('error', 'Please record a question or type one manually');
@@ -152,9 +153,20 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
     setIsGeneratingResponse(true);
     const startTime = Date.now();
-    
     try {
-      const response = await generateMeetingResponse(meetingContext!, transcript);
+      // If manual input, create a transcript entry for the AI
+      let transcriptForAI = transcript;
+      if (questionText && questionText.trim()) {
+        transcriptForAI = [
+          {
+            id: Date.now().toString(),
+            text: questionToUse,
+            timestamp: new Date(),
+            confidence: 1.0
+          }
+        ];
+      }
+      const response = await generateMeetingResponse(meetingContext!, transcriptForAI);
       const endTime = Date.now();
       const responseTime = endTime - startTime;
       
@@ -165,9 +177,8 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
         timestamp: new Date()
       };
       
-      // Add to beginning of array for recent-first display
       setAiResponses(prev => [aiResponse, ...prev]);
-      setManualQuestion(''); // Clear manual input
+      setManualQuestion(''); // Always clear manual input after response
       showNotification('success', `AI response generated in ${responseTime}ms!`);
     } catch (error) {
       console.error('Error generating response:', error);
@@ -253,22 +264,22 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-3 gap-6">
+      <div className="px-4 py-6 mx-auto max-w-7xl">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Left Column - AI Response & Summary */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* AI Response Generation - TOP PRIORITY */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-indigo-100">
+            <div className="p-6 bg-white border-2 border-indigo-100 shadow-lg rounded-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <h3 className="flex items-center text-xl font-bold text-gray-900">
                   <Brain className="w-6 h-6 mr-2 text-indigo-600" />
                   Neural AI Assistant
                   {isPremium ? (
-                    <span className="ml-2 text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full font-medium">
+                    <span className="px-2 py-1 ml-2 text-xs font-medium text-indigo-600 bg-indigo-100 rounded-full">
                       Ultra-Fast
                     </span>
                   ) : (
-                    <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full font-medium flex items-center">
+                    <span className="flex items-center px-2 py-1 ml-2 text-xs font-medium rounded-full bg-amber-100 text-amber-600">
                       <Crown className="w-3 h-3 mr-1" />
                       Premium
                     </span>
@@ -277,11 +288,11 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 <button
                   onClick={() => handleGenerateResponse()}
                   disabled={isGeneratingResponse || (!transcript.length && !manualQuestion.trim())}
-                  className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-semibold shadow-lg"
+                  className="flex items-center px-8 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGeneratingResponse ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
                       <span>Generating...</span>
                     </>
                   ) : (
@@ -301,12 +312,12 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     value={manualQuestion}
                     onChange={(e) => setManualQuestion(e.target.value)}
                     placeholder="Type a question manually if speech recognition doesn't capture it..."
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors text-base"
+                    className="flex-1 px-4 py-3 text-base transition-colors border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                   />
                   <button
                     type="submit"
                     disabled={!manualQuestion.trim() || isGeneratingResponse}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="flex items-center px-6 py-3 space-x-2 text-white transition-colors bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="w-4 h-4" />
                     <span>Ask</span>
@@ -315,9 +326,9 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </form>
 
               {apiReady && isPremium && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span className="text-green-700 font-medium">Neural Sync AI is ready for lightning-fast, accurate responses!</span>
+                <div className="flex items-center p-4 mb-6 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                  <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
+                  <span className="font-medium text-green-700">Neural Sync AI is ready for lightning-fast, accurate responses!</span>
                 </div>
               )}
 
@@ -327,36 +338,36 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 className="space-y-6 max-h-[600px] overflow-y-auto"
               >
                 {aiResponses.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500">
+                  <div className="py-16 text-center text-gray-500">
                     <Brain className="w-20 h-20 mx-auto mb-6 opacity-30" />
                     <p className="text-xl font-medium">AI responses will appear here</p>
-                    <p className="text-base mt-2">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
+                    <p className="mt-2 text-base">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
                   </div>
                 ) : (
                   aiResponses.map((response) => (
-                    <div key={response.id} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100 mb-4">
+                    <div key={response.id} className="p-6 mb-4 border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
                       <div className="flex items-start justify-between mb-4">
-                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-100 px-3 py-1 rounded-full">
+                        <span className="px-3 py-1 text-xs font-bold tracking-wide text-indigo-600 uppercase bg-indigo-100 rounded-full">
                           Neural Response
                         </span>
                         <div className="flex space-x-2">
                           <button
                             onClick={() => copyToClipboard(response.response)}
-                            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                            className="p-2 transition-colors rounded-lg hover:bg-white/50"
                             title="Copy response"
                           >
                             <Copy className="w-4 h-4 text-gray-600" />
                           </button>
-                          <span className="text-xs text-gray-500 mt-1">
+                          <span className="mt-1 text-xs text-gray-500">
                             {response.timestamp.toLocaleTimeString()}
                           </span>
                         </div>
                       </div>
                       <div className="mb-4">
-                        <p className="text-sm text-gray-600 font-medium">Question:</p>
-                        <p className="text-base text-gray-700 italic mb-4 bg-white/50 p-3 rounded-lg">{response.query}</p>
+                        <p className="text-sm font-medium text-gray-600">Question:</p>
+                        <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
                       </div>
-                      <p className="text-gray-900 leading-relaxed font-medium text-lg">{response.response}</p>
+                      <p className="text-lg font-medium leading-relaxed text-gray-900">{response.response}</p>
                     </div>
                   ))
                 )}
@@ -364,42 +375,42 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
             </div>
 
             {/* Smart Tips & Summary */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
               {/* Smart Tips */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="p-6 bg-white shadow-lg rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <h3 className="flex items-center text-lg font-semibold text-gray-900">
                     <Lightbulb className="w-5 h-5 mr-2 text-amber-500" />
                     Smart Tips
                   </h3>
                   <button
                     onClick={handleGenerateTips}
                     disabled={isGeneratingTips}
-                    className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    className="px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGeneratingTips ? 'Generating...' : 'Get Tips'}
                   </button>
                 </div>
 
                 {interviewTips.length > 0 ? (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                  <div className="space-y-3 overflow-y-auto max-h-64">
                     {interviewTips.map((tip, index) => (
-                      <div key={index} className="bg-amber-50 rounded-lg p-3 border-l-4 border-amber-400">
-                        <p className="text-sm text-amber-800 font-medium">{tip}</p>
+                      <div key={index} className="p-3 border-l-4 rounded-lg bg-amber-50 border-amber-400">
+                        <p className="text-sm font-medium text-amber-800">{tip}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-sm text-gray-500">
                     Get personalized tips based on your conversation context.
                   </p>
                 )}
               </div>
 
               {/* Meeting Summary */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="p-6 bg-white shadow-lg rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <h3 className="flex items-center text-lg font-semibold text-gray-900">
                     <FileText className="w-5 h-5 mr-2" />
                     Summary
                     {!isPremium && <Crown className="w-4 h-4 ml-2 text-amber-500" />}
@@ -407,32 +418,32 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                   <button
                     onClick={handleGenerateSummary}
                     disabled={isGeneratingSummary || !isPremium}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    className="px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGeneratingSummary ? 'Generating...' : 'Generate'}
                   </button>
                 </div>
 
                 {!isPremium ? (
-                  <div className="text-center py-8">
+                  <div className="py-8 text-center">
                     <Crown className="w-12 h-12 mx-auto mb-3 text-amber-400" />
-                    <p className="text-gray-600 mb-3">Premium feature</p>
+                    <p className="mb-3 text-gray-600">Premium feature</p>
                     <button
                       onClick={() => setShowPremiumModal(true)}
-                      className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+                      className="px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-amber-500 hover:bg-amber-600"
                     >
                       Upgrade to Access
                     </button>
                   </div>
                 ) : meetingSummary ? (
-                  <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
+                  <div className="p-4 overflow-y-auto rounded-lg bg-gray-50 max-h-64">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-medium tracking-wide uppercase text-emerald-600">
                         Meeting Summary
                       </span>
                       <button
                         onClick={() => copyToClipboard(meetingSummary)}
-                        className="p-1 hover:bg-white/50 rounded transition-colors"
+                        className="p-1 transition-colors rounded hover:bg-white/50"
                         title="Copy summary"
                       >
                         <Copy className="w-4 h-4 text-gray-600" />
@@ -443,7 +454,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-sm text-gray-500">
                     Generate a comprehensive summary of your meeting when you're ready.
                   </p>
                 )}
@@ -454,16 +465,16 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
           {/* Right Column - Questions & Transcript */}
           <div className="space-y-6">
             {/* Questions/Transcript Panel - RIGHT SIDE */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="flex items-center text-lg font-semibold text-gray-900">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   Live Questions & Transcript
                 </h2>
                 {transcript.length > 0 && (
                   <button
                     onClick={downloadTranscript}
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center space-x-1 text-sm"
+                    className="flex items-center px-3 py-1 space-x-1 text-sm transition-colors bg-gray-100 rounded-lg hover:bg-gray-200"
                   >
                     <Download className="w-4 h-4" />
                     <span>Export</span>
@@ -476,7 +487,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 {recordingState === 'idle' && (
                   <button
                     onClick={handleStartRecording}
-                    className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-indigo-600 hover:bg-indigo-700 rounded-xl"
                   >
                     <Mic className="w-5 h-5" />
                     <span>Start Recording</span>
@@ -486,7 +497,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 {recordingState === 'recording' && (
                   <button
                     onClick={handleStopRecording}
-                    className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2 animate-pulse-soft"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-red-500 hover:bg-red-600 rounded-xl animate-pulse-soft"
                   >
                     <MicOff className="w-5 h-5" />
                     <span>Recording... (Click to Stop)</span>
@@ -496,7 +507,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 {recordingState === 'paused' && (
                   <button
                     onClick={handleContinueRecording}
-                    className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-green-600 hover:bg-green-700 rounded-xl"
                   >
                     <Play className="w-5 h-5" />
                     <span>Continue Recording</span>
@@ -504,9 +515,9 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 )}
 
                 {speechError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-                    <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
-                    <span className="text-red-700 text-sm">{speechError}</span>
+                  <div className="flex items-center p-3 border border-red-200 rounded-lg bg-red-50">
+                    <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                    <span className="text-sm text-red-700">{speechError}</span>
                   </div>
                 )}
               </div>
@@ -514,32 +525,32 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               {/* Transcript Display - Recent First with Better Spacing */}
               <div
                 ref={transcriptRef}
-                className="bg-gray-50 rounded-xl p-4 h-80 overflow-y-auto border"
+                className="p-4 overflow-y-auto border bg-gray-50 rounded-xl h-80"
               >
                 {transcript.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
                       <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p className="font-medium">Click "Start Recording" to capture questions</p>
-                      <p className="text-sm mt-2">Neural Sync will process speech in real-time</p>
+                      <p className="mt-2 text-sm">Neural Sync will process speech in real-time</p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {/* Show most recent first with better spacing */}
                     {[...transcript].reverse().map((entry) => (
-                      <div key={entry.id} className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-indigo-400 mb-3">
+                      <div key={entry.id} className="p-4 mb-3 bg-white border-l-4 border-indigo-400 rounded-lg shadow-sm">
                         <div className="flex items-start justify-between">
-                          <p className="text-gray-900 flex-1 font-medium text-base leading-relaxed">{entry.text}</p>
-                          <span className="text-xs text-gray-500 ml-3 flex-shrink-0">
+                          <p className="flex-1 text-base font-medium leading-relaxed text-gray-900">{entry.text}</p>
+                          <span className="flex-shrink-0 ml-3 text-xs text-gray-500">
                             {entry.timestamp.toLocaleTimeString()}
                           </span>
                         </div>
                         {entry.confidence && (
                           <div className="mt-3">
-                            <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div className="w-full h-1 bg-gray-200 rounded-full">
                               <div 
-                                className="bg-indigo-500 h-1 rounded-full"
+                                className="h-1 bg-indigo-500 rounded-full"
                                 style={{ width: `${entry.confidence * 100}%` }}
                               />
                             </div>
@@ -552,10 +563,10 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
 
               {transcript.length > 0 && (
-                <div className="mt-4 flex justify-between">
+                <div className="flex justify-between mt-4">
                   <button
                     onClick={clearTranscript}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                    className="px-4 py-2 text-gray-600 transition-colors hover:text-gray-800"
                   >
                     Clear Transcript
                   </button>
@@ -567,8 +578,8 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
             </div>
 
             {/* Session Stats */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
                 <BarChart3 className="w-5 h-5 mr-2" />
                 Session Stats
               </h3>
@@ -581,7 +592,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                   <div className="text-2xl font-bold text-purple-600">{aiResponses.length}</div>
                   <div className="text-xs text-gray-600">AI Responses</div>
                 </div>
-                <div className="text-center col-span-2">
+                <div className="col-span-2 text-center">
                   <div className="text-lg font-bold text-emerald-600">
                     {Math.floor((Date.now() - startTime.current.getTime()) / 60000)} min
                   </div>
@@ -595,20 +606,20 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
       {/* Premium Modal */}
       {showPremiumModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-8 bg-white rounded-2xl">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl">
                 <Crown className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Feature</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="mb-4 text-2xl font-bold text-gray-900">Premium Feature</h3>
+              <p className="mb-6 text-gray-600">
                 Upgrade to Premium to access unlimited AI responses, advanced features, and priority support.
               </p>
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowPremiumModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 text-gray-700 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -617,7 +628,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     setShowPremiumModal(false);
                     navigate('/premium');
                   }}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                  className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                 >
                   Upgrade Now
                 </button>
@@ -633,9 +644,9 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>
           {notification.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <CheckCircle className="flex-shrink-0 w-5 h-5" />
           ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <AlertCircle className="flex-shrink-0 w-5 h-5" />
           )}
           <span className="text-sm font-medium">{notification.message}</span>
         </div>

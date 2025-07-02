@@ -7,31 +7,75 @@ import { Footer } from './components/Footer';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { BackButton } from './components/BackButton';
 
-// Lazy load components for better performance
-const LoginScreen = lazy(() => import('./components/LoginScreen').then(module => ({ default: module.LoginScreen })));
-const SetupScreen = lazy(() => import('./components/SetupScreen').then(module => ({ default: module.SetupScreen })));
-const MeetingScreen = lazy(() => import('./components/MeetingScreen').then(module => ({ default: module.MeetingScreen })));
-const AIInterviewPractice = lazy(() => import('./components/AIInterviewPractice').then(module => ({ default: module.AIInterviewPractice })));
-const UserProfile = lazy(() => import('./components/UserProfile').then(module => ({ default: module.UserProfile })));
-const PremiumPage = lazy(() => import('./components/PremiumPage').then(module => ({ default: module.PremiumPage })));
-const PaymentPage = lazy(() => import('./components/PaymentPage').then(module => ({ default: module.PaymentPage })));
-const DemoMeeting = lazy(() => import('./components/DemoMeeting').then(module => ({ default: module.DemoMeeting })));
-const LandingPage = lazy(() => import('./components/LandingPage').then(module => ({ default: module.LandingPage })));
-const ContactUs = lazy(() => import('./components/ContactUs').then(module => ({ default: module.ContactUs })));
-const AIInterviewPreview = lazy(() => import('./components/AIInterviewPreview').then(module => ({ default: module.AIInterviewPreview })));
-const AIAssistantPreview = lazy(() => import('./components/AIAssistantPreview').then(module => ({ default: module.AIAssistantPreview })));
-const InterviewSummary = lazy(() => import('./components/InterviewSummary').then(module => ({ default: module.InterviewSummary })));
+// Lazy load components for better performance with preloading
+const LoginScreen = lazy(() => 
+  import('./components/LoginScreen').then(module => ({ default: module.LoginScreen }))
+);
+const SetupScreen = lazy(() => 
+  import('./components/SetupScreen').then(module => ({ default: module.SetupScreen }))
+);
+const MeetingScreen = lazy(() => 
+  import('./components/MeetingScreen').then(module => ({ default: module.MeetingScreen }))
+);
+const AIInterviewPractice = lazy(() => 
+  import('./components/AIInterviewPractice').then(module => ({ default: module.AIInterviewPractice }))
+);
+const UserProfile = lazy(() => 
+  import('./components/UserProfile').then(module => ({ default: module.UserProfile }))
+);
+const PremiumPage = lazy(() => 
+  import('./components/PremiumPage').then(module => ({ default: module.PremiumPage }))
+);
+const PaymentPage = lazy(() => 
+  import('./components/PaymentPage').then(module => ({ default: module.PaymentPage }))
+);
+const DemoMeeting = lazy(() => 
+  import('./components/DemoMeeting').then(module => ({ default: module.DemoMeeting }))
+);
+const LandingPage = lazy(() => 
+  import('./components/LandingPage').then(module => ({ default: module.LandingPage }))
+);
+const ContactUs = lazy(() => 
+  import('./components/ContactUs').then(module => ({ default: module.ContactUs }))
+);
+const AIInterviewPreview = lazy(() => 
+  import('./components/AIInterviewPreview').then(module => ({ default: module.AIInterviewPreview }))
+);
+const AIAssistantPreview = lazy(() => 
+  import('./components/AIAssistantPreview').then(module => ({ default: module.AIAssistantPreview }))
+);
+const InterviewSummary = lazy(() => 
+  import('./components/InterviewSummary').then(module => ({ default: module.InterviewSummary }))
+);
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+// Preload critical components
+const preloadComponents = () => {
+  const componentsToPreload = [
+    () => import('./components/LoginScreen'),
+    () => import('./components/SetupScreen'),
+    () => import('./components/MeetingScreen'),
+  ];
+  
+  componentsToPreload.forEach(importFn => {
+    importFn().catch(() => {
+      // Silently handle preload failures
+    });
+  });
 };
 
-const AppContent: React.FC = () => {
+// Start preloading after a short delay
+setTimeout(preloadComponents, 1000);
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+});
+
+const AppContent: React.FC = React.memo(() => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <BackButton />
       <main className="flex-1">
@@ -55,14 +99,16 @@ const AppContent: React.FC = () => {
             <Route path="/summary" element={<ProtectedRoute><InterviewSummary /></ProtectedRoute>} />
             
             {/* Redirect authenticated users */}
-            <Route path="*" element={isAuthenticated ? <Navigate to="/setup" /> : <Navigate to="/" />} />
+            <Route path="*" element={isAuthenticated ? <Navigate to="/setup" replace /> : <Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
       <Footer />
     </div>
   );
-};
+});
+
+AppContent.displayName = 'AppContent';
 
 function App() {
   return (
