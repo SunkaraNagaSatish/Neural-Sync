@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Brain, Heart, Zap, Shield, Users, Award, Mail, Phone, MapPin } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Footer: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -46,8 +49,8 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
                 <Link 
-                  to="/ai-assistant-preview" 
-                  onClick={() => handleFooterClick('/ai-assistant-preview')}
+                  to={isAuthenticated ? "/setup" : "/ai-assistant-preview"}
+                  onClick={() => handleFooterClick(isAuthenticated ? "/setup" : "/ai-assistant-preview")}
                   className="hover:text-white transition-colors flex items-center space-x-2 group"
                 >
                   <Brain className="w-3 h-3 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
@@ -56,8 +59,8 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link 
-                  to="/ai-interview-preview" 
-                  onClick={() => handleFooterClick('/ai-interview-preview')}
+                  to={isAuthenticated ? "/ai-practice" : "/ai-interview-preview"}
+                  onClick={() => handleFooterClick(isAuthenticated ? "/ai-practice" : "/ai-interview-preview")}
                   className="hover:text-white transition-colors flex items-center space-x-2 group"
                 >
                   <Zap className="w-3 h-3 text-purple-400 group-hover:text-purple-300 transition-colors" />

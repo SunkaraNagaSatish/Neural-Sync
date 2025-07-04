@@ -13,8 +13,11 @@ import {
   Award, 
   Star
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export const LandingPage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
   const features = [
     {
       icon: Zap,
@@ -116,22 +119,41 @@ export const LandingPage: React.FC = () => {
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 px-4 mb-6 sm:flex-row sm:gap-4 sm:mb-8 lg:mb-12">
-              <Link
-                to="/login"
-                className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-all duration-200 shadow-lg sm:w-auto sm:px-8 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 sm:text-base"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Link>
-              <Link
-                to="/ai-assistant-preview"
-                className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-gray-700 transition-colors bg-white border border-gray-200 shadow-sm sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-50 sm:text-base"
-              >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Watch Demo</span>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/setup"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-all duration-200 shadow-lg sm:w-auto sm:px-8 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 sm:text-base"
+                  >
+                    <span>Start Neural Sync Session</span>
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Link>
+                  <Link
+                    to="/ai-practice"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-gray-700 transition-colors bg-white border border-gray-200 shadow-sm sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-50 sm:text-base"
+                  >
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Practice with AI</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-all duration-200 shadow-lg sm:w-auto sm:px-8 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 sm:text-base"
+                  >
+                    <span>Get Started Free</span>
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </Link>
+                  <Link
+                    to="/ai-assistant-preview"
+                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-gray-700 transition-colors bg-white border border-gray-200 shadow-sm sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-50 sm:text-base"
+                  >
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Watch Demo</span>
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col items-center justify-center px-4 space-y-2 text-xs text-gray-500 sm:flex-row sm:space-y-0 sm:space-x-6 lg:space-x-8 sm:text-sm">
@@ -291,22 +313,41 @@ export const LandingPage: React.FC = () => {
             Join thousands of professionals who have successfully landed their dream jobs with Neural Sync
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-            <Link
-              to="/login"
-              className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-indigo-600 transition-colors bg-white sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-100 sm:text-base"
-            >
-              <span>Start Free Today</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Link>
-            <Link
-              to="/ai-assistant-preview"
-              className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-colors border sm:w-auto sm:px-8 sm:py-4 bg-white/20 rounded-xl hover:bg-white/30 border-white/30 sm:text-base"
-            >
-              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Watch Demo</span>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/setup"
+                  className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-indigo-600 transition-colors bg-white sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-100 sm:text-base"
+                >
+                  <span>Start Neural Sync Session</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+                <Link
+                  to="/ai-practice"
+                  className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-colors border sm:w-auto sm:px-8 sm:py-4 bg-white/20 rounded-xl hover:bg-white/30 border-white/30 sm:text-base"
+                >
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Practice with AI</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-indigo-600 transition-colors bg-white sm:w-auto sm:px-8 sm:py-4 rounded-xl hover:bg-gray-100 sm:text-base"
+                >
+                  <span>Start Free Today</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+                <Link
+                  to="/ai-assistant-preview"
+                  className="flex items-center justify-center w-full px-6 py-3 space-x-2 text-sm font-semibold text-white transition-colors border sm:w-auto sm:px-8 sm:py-4 bg-white/20 rounded-xl hover:bg-white/30 border-white/30 sm:text-base"
+                >
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Watch Demo</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>

@@ -30,6 +30,7 @@ export const SetupScreen: React.FC = () => {
   const [parseSuccess, setParseSuccess] = useState(false);
   const [pdfJSAvailable, setPdfJSAvailable] = useState<boolean | null>(null);
   const [showManualInput, setShowManualInput] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Test PDF.js availability on component mount
   useEffect(() => {
@@ -109,20 +110,59 @@ export const SetupScreen: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.jobTitle.trim()) newErrors.jobTitle = 'Job title is required';
-    if (!formData.companyName.trim()) newErrors.companyName = 'Company name is required';
-    if (!formData.jobDescription.trim()) newErrors.jobDescription = 'Job description is required';
-    if (!formData.meetingType.trim()) newErrors.meetingType = 'Meeting type is required';
-    if (!formData.resumeText.trim()) newErrors.resume = 'Please upload your resume or enter resume text manually';
+    if (!formData.jobTitle.trim()) {
+      newErrors.jobTitle = 'Job title is required';
+    }
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required';
+    }
+    if (!formData.jobDescription.trim()) {
+      newErrors.jobDescription = 'Job description is required';
+    }
+    if (!formData.meetingType.trim()) {
+      newErrors.meetingType = 'Meeting type is required';
+    }
+    if (!formData.resumeText.trim()) {
+      newErrors.resume = 'Please upload your resume or enter resume text manually';
+    } else if (formData.resumeText.trim().length < 50) {
+      newErrors.resume = 'Resume text is too short. Please provide more details.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      navigate('/meeting', { state: { context: formData as MeetingContext } });
+    
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    
+    try {
+      if (validateForm()) {
+        // Create the meeting context
+        const meetingContext: MeetingContext = {
+          jobTitle: formData.jobTitle.trim(),
+          companyName: formData.companyName.trim(),
+          jobDescription: formData.jobDescription.trim(),
+          meetingType: formData.meetingType,
+          resumeText: formData.resumeText.trim()
+        };
+        
+        console.log('Navigating to meeting with context:', meetingContext);
+        
+        // Navigate with context
+        navigate('/meeting', { 
+          state: { context: meetingContext },
+          replace: true 
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setErrors(prev => ({ ...prev, submit: 'Failed to start meeting. Please try again.' }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -222,31 +262,29 @@ export const SetupScreen: React.FC = () => {
               </div>
 
               {/* Manual Resume Input */}
-              {(showManualInput || !parseSuccess) && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Or enter your resume text manually:
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowManualInput(!showManualInput)}
-                      className="text-xs text-indigo-600 hover:text-indigo-700"
-                    >
-                      {showManualInput ? 'Hide' : 'Show'} manual input
-                    </button>
-                  </div>
-                  {showManualInput && (
-                    <textarea
-                      value={formData.resumeText}
-                      onChange={(e) => handleManualResumeInput(e.target.value)}
-                      rows={8}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors resize-none text-sm"
-                      placeholder="Paste your resume content here... Include your experience, skills, education, etc."
-                    />
-                  )}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Or enter your resume text manually:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualInput(!showManualInput)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700"
+                  >
+                    {showManualInput ? 'Hide' : 'Show'} manual input
+                  </button>
                 </div>
-              )}
+                {(showManualInput || !parseSuccess) && (
+                  <textarea
+                    value={formData.resumeText}
+                    onChange={(e) => handleManualResumeInput(e.target.value)}
+                    rows={8}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors resize-none text-sm"
+                    placeholder="Paste your resume content here... Include your experience, skills, education, etc."
+                  />
+                )}
+              </div>
 
               {errors.resume && (
                 <div className="flex items-start text-red-600 text-sm bg-red-50 p-3 rounded-lg">
@@ -349,13 +387,26 @@ export const SetupScreen: React.FC = () => {
               )}
             </div>
 
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="flex items-center text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>{errors.submit}</span>
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isParsingPDF}
+              disabled={isParsingPDF || isSubmitting}
               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-4 px-8 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg"
             >
-              {isParsingPDF ? (
+              {isSubmitting ? (
+                <>
+                  <Loader className="w-5 h-5 mr-2 animate-spin" />
+                  Starting Neural Sync Session...
+                </>
+              ) : isParsingPDF ? (
                 <>
                   <Loader className="w-5 h-5 mr-2 animate-spin" />
                   Processing Resume...

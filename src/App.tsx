@@ -66,10 +66,31 @@ const preloadComponents = () => {
 // Start preloading after a short delay
 setTimeout(preloadComponents, 1000);
 
+// Protected Route Component with performance optimization
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
 });
+
+ProtectedRoute.displayName = 'ProtectedRoute';
+
+// Public Route Component (redirects authenticated users)
+const PublicRoute: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (isAuthenticated) {
+    return <Navigate to="/setup" replace />;
+  }
+  
+  return <>{children}</>;
+});
+
+PublicRoute.displayName = 'PublicRoute';
 
 const AppContent: React.FC = React.memo(() => {
   const { isAuthenticated } = useAuth();
@@ -83,23 +104,59 @@ const AppContent: React.FC = React.memo(() => {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginScreen />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/ai-interview-preview" element={<AIInterviewPreview />} />
             <Route path="/ai-assistant-preview" element={<AIAssistantPreview />} />
             <Route path="/demo" element={<DemoMeeting />} />
             
-            {/* Protected Routes */}
-            <Route path="/setup" element={<ProtectedRoute><SetupScreen /></ProtectedRoute>} />
-            <Route path="/meeting" element={<ProtectedRoute><MeetingScreen /></ProtectedRoute>} />
-            <Route path="/ai-practice" element={<ProtectedRoute><AIInterviewPractice /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-            <Route path="/premium" element={<ProtectedRoute><PremiumPage /></ProtectedRoute>} />
-            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
-            <Route path="/summary" element={<ProtectedRoute><InterviewSummary /></ProtectedRoute>} />
+            {/* Auth Routes (redirect if already authenticated) */}
+            <Route path="/login" element={
+              <PublicRoute>
+                <LoginScreen />
+              </PublicRoute>
+            } />
             
-            {/* Redirect authenticated users */}
-            <Route path="*" element={isAuthenticated ? <Navigate to="/setup" replace /> : <Navigate to="/" replace />} />
+            {/* Protected Routes */}
+            <Route path="/setup" element={
+              <ProtectedRoute>
+                <SetupScreen />
+              </ProtectedRoute>
+            } />
+            <Route path="/meeting" element={
+              <ProtectedRoute>
+                <MeetingScreen />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-practice" element={
+              <ProtectedRoute>
+                <AIInterviewPractice />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/premium" element={
+              <ProtectedRoute>
+                <PremiumPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/payment" element={
+              <ProtectedRoute>
+                <PaymentPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/summary" element={
+              <ProtectedRoute>
+                <InterviewSummary />
+              </ProtectedRoute>
+            } />
+            
+            {/* Fallback redirect */}
+            <Route path="*" element={
+              <Navigate to={isAuthenticated ? "/setup" : "/"} replace />
+            } />
           </Routes>
         </Suspense>
       </main>

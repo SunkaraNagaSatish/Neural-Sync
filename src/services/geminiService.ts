@@ -129,6 +129,200 @@ Generate a natural, professional response:`;
   }
 };
 
+// ENHANCED: Generate code response for technical questions with better React.js support
+export const generateCodeResponse = async (
+  context: MeetingContext,
+  recentTranscript: TranscriptEntry[]
+): Promise<string> => {
+  if (!genAI) {
+    try {
+      genAI = new GoogleGenerativeAI(API_KEY);
+    } catch (error) {
+      throw new Error('Neural Sync AI not available. Please check your connection.');
+    }
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash", // Use more capable model for code generation
+      generationConfig: {
+        temperature: 0.2, // Lower temperature for more consistent code
+        topK: 10,
+        topP: 0.8,
+        maxOutputTokens: 800, // More tokens for comprehensive code examples
+        candidateCount: 1,
+      }
+    });
+
+    const lastQuestion = recentTranscript.length > 0 
+      ? recentTranscript[recentTranscript.length - 1].text 
+      : '';
+
+    // Determine the primary technology from job title and context
+    const jobTitleLower = context.jobTitle.toLowerCase();
+    const questionLower = lastQuestion.toLowerCase();
+    
+    let primaryTech = 'JavaScript';
+    if (jobTitleLower.includes('react') || questionLower.includes('react')) {
+      primaryTech = 'React.js';
+    } else if (jobTitleLower.includes('python') || questionLower.includes('python')) {
+      primaryTech = 'Python';
+    } else if (jobTitleLower.includes('java') || questionLower.includes('java')) {
+      primaryTech = 'Java';
+    } else if (jobTitleLower.includes('node') || questionLower.includes('node')) {
+      primaryTech = 'Node.js';
+    } else if (jobTitleLower.includes('angular') || questionLower.includes('angular')) {
+      primaryTech = 'Angular';
+    } else if (jobTitleLower.includes('vue') || questionLower.includes('vue')) {
+      primaryTech = 'Vue.js';
+    }
+
+    // Enhanced prompt specifically designed for code generation
+    const prompt = `You are a senior software engineer providing code examples for technical interview questions.
+
+CANDIDATE PROFILE:
+- Position: ${context.jobTitle}
+- Company: ${context.companyName}
+- Primary Technology: ${primaryTech}
+
+CANDIDATE BACKGROUND:
+${context.resumeText.slice(0, 800)}
+
+INTERVIEWER'S QUESTION:
+"${lastQuestion}"
+
+INSTRUCTIONS FOR CODE GENERATION:
+1. Analyze if this question requires a code implementation or example
+2. If it's a coding question, provide clean, production-ready code
+3. Use ${primaryTech} as the primary language/framework unless the question specifies otherwise
+4. For React.js questions, provide functional components with hooks
+5. Include proper imports, exports, and TypeScript types when applicable
+6. Add clear comments explaining complex logic
+7. Format code with proper indentation and structure
+8. If it's not a coding question, respond with "This question doesn't require a code implementation."
+
+SPECIFIC GUIDELINES:
+- For React questions: Use functional components, hooks (useState, useEffect, etc.), and modern React patterns
+- For JavaScript questions: Use ES6+ syntax, async/await, and modern JavaScript features
+- For Python questions: Use clean, Pythonic code with proper error handling
+- For algorithm questions: Provide optimized solutions with time/space complexity analysis
+- For system design questions: Provide architectural code examples or pseudocode
+
+Generate a comprehensive code example:`;
+
+    console.log('Neural Sync generating code response...');
+    const startTime = Date.now();
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    const endTime = Date.now();
+    console.log(`Neural Sync code response generated in ${endTime - startTime}ms`);
+    
+    // Enhanced detection for code-worthy questions
+    const codeKeywords = [
+      // General coding terms
+      'code', 'implement', 'function', 'algorithm', 'write', 'program', 'solve', 'debug', 'optimize',
+      // React-specific terms
+      'react', 'component', 'jsx', 'hook', 'usestate', 'useeffect', 'props', 'state', 'render',
+      // JavaScript terms
+      'javascript', 'js', 'async', 'await', 'promise', 'callback', 'closure', 'prototype',
+      // General programming terms
+      'class', 'method', 'api', 'database', 'query', 'script', 'logic', 'syntax', 'framework', 'library',
+      // Data structures and algorithms
+      'array', 'object', 'loop', 'recursion', 'sort', 'search', 'tree', 'graph', 'hash',
+      // Web development
+      'html', 'css', 'dom', 'event', 'fetch', 'axios', 'rest', 'graphql'
+    ];
+    
+    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword));
+    
+    // Special handling for React questions
+    const isReactQuestion = questionLower.includes('react') || 
+                           questionLower.includes('component') || 
+                           questionLower.includes('jsx') || 
+                           questionLower.includes('hook') ||
+                           jobTitleLower.includes('react');
+    
+    if (!isCodeQuestion && !isReactQuestion) {
+      return "This question doesn't require a code implementation. It appears to be a conceptual or behavioral question that would be better answered with an explanation rather than code.";
+    }
+    
+    if (!text || text.length < 50) {
+      // Provide fallback code examples based on question type
+      if (isReactQuestion) {
+        return `// React.js Example Component
+import React, { useState, useEffect } from 'react';
+
+const ExampleComponent = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch data or perform side effects
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Your API call here
+        const response = await fetch('/api/data');
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h2>Data Display</h2>
+      {data.map((item, index) => (
+        <div key={index}>
+          {/* Render your data here */}
+          {item.name}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ExampleComponent;`;
+      } else {
+        return `// JavaScript Example
+function exampleFunction(input) {
+  // Implementation based on your specific requirements
+  try {
+    // Your logic here
+    return processInput(input);
+  } catch (error) {
+    console.error('Error:', error);
+    return null;
+  }
+}
+
+// Usage example
+const result = exampleFunction(inputData);
+console.log(result);`;
+      }
+    }
+    
+    return text;
+    
+  } catch (error) {
+    console.error('Neural Sync code generation error:', error);
+    return "Unable to generate code at this time due to a technical error. Please try rephrasing your question or try again in a moment.";
+  }
+};
+
 export const generateMeetingSummary = async (
   context: MeetingContext,
   fullTranscript: TranscriptEntry[]

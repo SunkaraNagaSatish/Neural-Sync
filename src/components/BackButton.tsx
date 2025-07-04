@@ -12,16 +12,15 @@ export const BackButton: React.FC = () => {
   const hideOnPaths = [
     '/', 
     '/login', 
-    '/ai-assistant-preview', // Hide on AI assistant preview when logged in
-    '/ai-interview-preview'  // Hide on AI interview preview when logged in
+    '/setup' // Hide on setup page when authenticated
   ];
   
-  // Hide back button on preview pages when user is authenticated
+  // Hide back button on specific paths
   if (hideOnPaths.includes(location.pathname)) {
     return null;
   }
 
-  // Also hide on preview pages when authenticated
+  // Hide on preview pages when authenticated (they should use main navigation)
   if (isAuthenticated && (location.pathname === '/ai-assistant-preview' || location.pathname === '/ai-interview-preview')) {
     return null;
   }
