@@ -113,15 +113,21 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   const transcriptRef = useRef<HTMLDivElement>(null);
   const aiResponsesRef = useRef<HTMLDivElement>(null);
   const startTime = useRef(storedStartTime);
+  const lastTranscriptLength = useRef(0);
 
-  // Update transcript when new entries come from speech recognition
+  // Update transcript when new entries come from speech recognition - FIXED
   useEffect(() => {
-    if (transcript.length > 0) {
-      const newTranscript = [...allTranscript, ...transcript];
-      setAllTranscript(newTranscript);
-      sessionStorage.setItem(SESSION_STORAGE_KEYS.TRANSCRIPT, JSON.stringify(newTranscript));
+    if (transcript.length > lastTranscriptLength.current) {
+      // Only add new entries, not all entries
+      const newEntries = transcript.slice(lastTranscriptLength.current);
+      if (newEntries.length > 0) {
+        const updatedTranscript = [...allTranscript, ...newEntries];
+        setAllTranscript(updatedTranscript);
+        sessionStorage.setItem(SESSION_STORAGE_KEYS.TRANSCRIPT, JSON.stringify(updatedTranscript));
+        lastTranscriptLength.current = transcript.length;
+      }
     }
-  }, [transcript, allTranscript]);
+  }, [transcript.length]); // Only depend on length, not the entire transcript array
 
   // Save AI responses to session storage
   useEffect(() => {
@@ -154,24 +160,26 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     checkAPI();
   }, []);
 
-  // Auto-stop recording when new transcript entry is added
+  // Auto-stop recording when new transcript entry is added - IMPROVED
   useEffect(() => {
     if (transcript.length > 0 && isListening) {
       const lastEntry = transcript[transcript.length - 1];
       const timeSinceLastEntry = Date.now() - lastEntry.timestamp.getTime();
       
       // Auto-stop after getting a question (with small delay to ensure complete capture)
-      if (timeSinceLastEntry < 1000) {
-        setTimeout(() => {
+      if (timeSinceLastEntry < 2000) { // Increased delay for better capture
+        const timeoutId = setTimeout(() => {
           if (isListening) {
             stopListening();
             setRecordingState('idle');
             showNotification('success', 'Question captured! Recording stopped automatically.');
           }
-        }, 1500);
+        }, 2000); // Increased timeout for better stability
+        
+        return () => clearTimeout(timeoutId);
       }
     }
-  }, [transcript, isListening, stopListening]);
+  }, [transcript.length, isListening, stopListening]); // Only depend on length
 
   // Auto-scroll to top of AI responses when new response is added
   useEffect(() => {
@@ -193,6 +201,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   };
 
   const handleStartRecording = () => {
+    clearTranscript(); // Clear current transcript before starting new recording
     startListening();
     setRecordingState('recording');
   };
@@ -317,7 +326,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     if (manualQuestion.trim()) {
       // Add manual question to transcript
       const manualEntry = {
-        id: Date.now().toString(),
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         text: manualQuestion.trim(),
         timestamp: new Date(),
         confidence: 1.0
@@ -405,6 +414,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     clearTranscript();
     setManualQuestion('');
     startTime.current = new Date();
+    lastTranscriptLength.current = 0;
     
     showNotification('success', 'Session cleared!');
   };
