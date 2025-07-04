@@ -17,15 +17,27 @@ import {
   Send,
   Crown,
   Code
+  Crown,
+  Code
 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { MeetingContext, AIResponse } from '../types';
+import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { usePremium } from '../contexts/PremiumContext';
 
 interface MeetingScreenProps {
   context?: MeetingContext;
 }
+
+// Session storage keys for persistence
+const SESSION_STORAGE_KEYS = {
+  CONTEXT: 'neural_sync_meeting_context',
+  TRANSCRIPT: 'neural_sync_transcript',
+  AI_RESPONSES: 'neural_sync_ai_responses',
+  CODE_RESPONSES: 'neural_sync_code_responses',
+  START_TIME: 'neural_sync_start_time'
+};
 
 // Session storage keys for persistence
 const SESSION_STORAGE_KEYS = {
@@ -103,6 +115,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   }, [meetingContext]);
 
   // Redirect if no context provided and none in storage
+  // Redirect if no context provided and none in storage
   useEffect(() => {
     if (!meetingContext) {
       navigate('/setup');
@@ -123,6 +136,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   const [aiResponses, setAiResponses] = useState<AIResponse[]>(storedAiResponses);
   const [codeResponses, setCodeResponses] = useState<AIResponse[]>(storedCodeResponses);
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
@@ -222,8 +236,10 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   // Auto-scroll to top of transcript when new entry is added
   useEffect(() => {
     if (transcriptRef.current && allTranscript.length > 0) {
+    if (transcriptRef.current && allTranscript.length > 0) {
       transcriptRef.current.scrollTop = 0;
     }
+  }, [allTranscript]);
   }, [allTranscript]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
@@ -398,12 +414,14 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     }
 
     if (allTranscript.length === 0) {
+    if (allTranscript.length === 0) {
       showNotification('error', 'No transcript available to summarize');
       return;
     }
 
     setIsGeneratingSummary(true);
     try {
+      const summary = await generateMeetingSummary(meetingContext!, allTranscript);
       const summary = await generateMeetingSummary(meetingContext!, allTranscript);
       setMeetingSummary(summary);
       showNotification('success', 'Meeting summary generated!');
@@ -419,6 +437,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   const handleGenerateTips = async () => {
     setIsGeneratingTips(true);
     try {
+      const tips = await generateInterviewTips(meetingContext!, allTranscript);
       const tips = await generateInterviewTips(meetingContext!, allTranscript);
       setInterviewTips(tips);
       showNotification('success', 'Smart tips generated!');
@@ -437,6 +456,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   };
 
   const downloadTranscript = () => {
+    const content = allTranscript.map(entry => 
     const content = allTranscript.map(entry => 
       `[${entry.timestamp.toLocaleTimeString()}] ${entry.text}`
     ).join('\n');
@@ -478,6 +498,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="px-4 py-6 mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left Column - AI Response & Code */}
           {/* Left Column - AI Response & Code */}
           <div className="space-y-6 lg:col-span-2">
             {/* AI Response Generation - TOP PRIORITY */}
@@ -533,6 +554,42 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     )}
                   </button>
                 </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => handleGenerateResponse()}
+                    disabled={isGeneratingResponse || (!allTranscript.length && !manualQuestion.trim())}
+                    className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingResponse ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        <span>Get Instant Response</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleGenerateCode()}
+                    disabled={isGeneratingCode || (!allTranscript.length && !manualQuestion.trim())}
+                    className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingCode ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Code className="w-5 h-5" />
+                        <span>Get Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Manual Question Input - ENHANCED */}
@@ -548,9 +605,11 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                   <button
                     type="submit"
                     disabled={!manualQuestion.trim()}
+                    disabled={!manualQuestion.trim()}
                     className="flex items-center px-6 py-3 space-x-2 text-white transition-colors bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="w-4 h-4" />
+                    <span>Add</span>
                     <span>Add</span>
                   </button>
                 </div>
@@ -567,8 +626,13 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               <div 
                 ref={aiResponsesRef}
                 className="space-y-6 max-h-[400px] overflow-y-auto"
+                className="space-y-6 max-h-[400px] overflow-y-auto"
               >
                 {aiResponses.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500">
+                    <Brain className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium">AI responses will appear here</p>
+                    <p className="mt-2 text-sm">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
                   <div className="py-12 text-center text-gray-500">
                     <Brain className="w-16 h-16 mx-auto mb-4 opacity-30" />
                     <p className="text-lg font-medium">AI responses will appear here</p>
@@ -599,10 +663,51 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                         <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
                       </div>
                       <p className="text-base font-medium leading-relaxed text-gray-900">{response.response}</p>
+                      <p className="text-base font-medium leading-relaxed text-gray-900">{response.response}</p>
                     </div>
                   ))
                 )}
               </div>
+
+              {/* Code Responses Section */}
+              {codeResponses.length > 0 && (
+                <div className="mt-8">
+                  <h4 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
+                    <Code className="w-5 h-5 mr-2 text-green-600" />
+                    Code Responses
+                  </h4>
+                  <div className="space-y-6 max-h-[400px] overflow-y-auto">
+                    {codeResponses.map((response) => (
+                      <div key={response.id} className="p-6 border border-green-100 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                        <div className="flex items-start justify-between mb-4">
+                          <span className="px-3 py-1 text-xs font-bold tracking-wide text-green-600 uppercase bg-green-100 rounded-full">
+                            Code Response
+                          </span>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => copyToClipboard(response.response)}
+                              className="p-2 transition-colors rounded-lg hover:bg-white/50"
+                              title="Copy code"
+                            >
+                              <Copy className="w-4 h-4 text-gray-600" />
+                            </button>
+                            <span className="mt-1 text-xs text-gray-500">
+                              {response.timestamp.toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-600">Question:</p>
+                          <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
+                        </div>
+                        <div className="p-4 font-mono text-sm bg-gray-900 rounded-lg">
+                          <pre className="text-green-400 whitespace-pre-wrap">{response.response}</pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Code Responses Section */}
               {codeResponses.length > 0 && (
@@ -754,7 +859,26 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                       </button>
                       <button
                         onClick={clearSession}
-                        className="flex items-center px-3 py-1 space-x-1 text-sm text-red-600 transition-colors bg-red-50 rounded-lg hover:bg-red-100"
+                        className="flex items-center px-3 py-1 space-x-1 text-sm text-red-600 transition-colors rounded-lg bg-red-50 hover:bg-red-100"
+                      >
+                        <span>Clear</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  {allTranscript.length > 0 && (
+                    <>
+                      <button
+                        onClick={downloadTranscript}
+                        className="flex items-center px-3 py-1 space-x-1 text-sm transition-colors bg-gray-100 rounded-lg hover:bg-gray-200"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Export</span>
+                      </button>
+                      <button
+                        onClick={clearSession}
+                        className="flex items-center px-3 py-1 space-x-1 text-sm text-red-600 transition-colors rounded-lg bg-red-50 hover:bg-red-100"
                       >
                         <span>Clear</span>
                       </button>
@@ -799,6 +923,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 className="p-4 overflow-y-auto border bg-gray-50 rounded-xl h-80"
               >
                 {allTranscript.length === 0 ? (
+                {allTranscript.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
                       <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -809,6 +934,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 ) : (
                   <div className="space-y-4">
                     {/* Show most recent first with better spacing */}
+                    {[...allTranscript].reverse().map((entry) => (
                     {[...allTranscript].reverse().map((entry) => (
                       <div key={entry.id} className="p-4 mb-3 bg-white border-l-4 border-indigo-400 rounded-lg shadow-sm">
                         <div className="flex items-start justify-between">
@@ -834,8 +960,10 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
 
               {allTranscript.length > 0 && (
+              {allTranscript.length > 0 && (
                 <div className="flex justify-between mt-4">
                   <span className="text-sm text-gray-500">
+                    {allTranscript.length} entries captured
                     {allTranscript.length} entries captured
                   </span>
                 </div>
@@ -851,12 +979,18 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-indigo-600">{allTranscript.length}</div>
+                  <div className="text-2xl font-bold text-indigo-600">{allTranscript.length}</div>
                   <div className="text-xs text-gray-600">Questions Captured</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">{aiResponses.length}</div>
                   <div className="text-xs text-gray-600">AI Responses</div>
                 </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{codeResponses.length}</div>
+                  <div className="text-xs text-gray-600">Code Responses</div>
+                </div>
+                <div className="text-center">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">{codeResponses.length}</div>
                   <div className="text-xs text-gray-600">Code Responses</div>
@@ -883,6 +1017,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
               <h3 className="mb-4 text-2xl font-bold text-gray-900">Premium Feature</h3>
               <p className="mb-6 text-gray-600">
+                Upgrade to Premium to access unlimited AI responses, code generation, advanced features, and priority support.
                 Upgrade to Premium to access unlimited AI responses, code generation, advanced features, and priority support.
               </p>
               <div className="flex space-x-3">

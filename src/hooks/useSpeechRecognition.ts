@@ -19,6 +19,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const lastResultRef = useRef<string>('');
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const isProcessingRef = useRef<boolean>(false);
+  const isProcessingRef = useRef<boolean>(false);
 
   // Memoize error messages for better performance
   const errorMessages = useMemo(() => ({
@@ -116,6 +117,16 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       recognitionRef.current = null;
     }
 
+    // Stop any existing recognition first
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.warn('Error stopping existing recognition:', err);
+      }
+      recognitionRef.current = null;
+    }
+
     try {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -146,6 +157,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
             } catch (err) {
               console.warn('Error stopping recognition on timeout:', err);
             }
+            try {
+              recognitionRef.current.stop();
+            } catch (err) {
+              console.warn('Error stopping recognition on timeout:', err);
+            }
           }
         }, 15000);
       };
@@ -170,11 +186,14 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         setIsListening(false);
         isProcessingRef.current = false;
         
+        isProcessingRef.current = false;
+        
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
       };
+
 
       recognition.onend = () => {
         setIsListening(false);
@@ -188,8 +207,10 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         }
       };
 
+
       recognitionRef.current = recognition;
       recognition.start();
+      
       
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
@@ -206,13 +227,25 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       } catch (err) {
         console.warn('Error stopping recognition:', err);
       }
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.warn('Error stopping recognition:', err);
+      }
       recognitionRef.current = null;
     }
+    
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    
     
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
