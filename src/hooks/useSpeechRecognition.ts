@@ -10,15 +10,16 @@ interface UseSpeechRecognitionReturn {
   error: string | null;
 }
 
+// Use 'any' for recognitionRef INSIDE the hook, not at the top level
+
 export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null); // <-- move here
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastResultRef = useRef<string>('');
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const isProcessingRef = useRef<boolean>(false);
   const isProcessingRef = useRef<boolean>(false);
 
   // Memoize error messages for better performance
@@ -31,7 +32,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     'aborted': 'Speech recognition was aborted.',
   }), []);
 
-  const processTranscript = useCallback((event: SpeechRecognitionEvent) => {
+  const processTranscript = useCallback((event: any) => {
     // Prevent multiple simultaneous processing
     if (isProcessingRef.current) {
       return;
@@ -128,7 +129,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     }
 
     try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       
       // Optimized settings for better accuracy and performance
@@ -166,11 +167,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         }, 15000);
       };
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
+      recognition.onresult = (event: any) => {
         processTranscript(event);
       };
 
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         
         // Don't show error for aborted (user stopped)
@@ -240,17 +241,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
       debounceTimer.current = null;
     }
     
-    
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = null;
-    }
     
     setIsListening(false);
     isProcessingRef.current = false;
@@ -276,7 +271,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }

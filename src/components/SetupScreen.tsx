@@ -152,6 +152,8 @@ export const SetupScreen: React.FC = () => {
         
         console.log('Navigating to meeting with context:', meetingContext);
         
+        // Save context to session storage for MeetingScreen reload support
+        sessionStorage.setItem('neural_sync_meeting_context', JSON.stringify(meetingContext));
         // Navigate with context
         navigate('/meeting', { 
           state: { context: meetingContext },
