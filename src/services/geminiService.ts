@@ -129,6 +129,90 @@ Generate a natural, professional response:`;
   }
 };
 
+// NEW: Generate code response for technical questions
+export const generateCodeResponse = async (
+  context: MeetingContext,
+  recentTranscript: TranscriptEntry[]
+): Promise<string> => {
+  if (!genAI) {
+    try {
+      genAI = new GoogleGenerativeAI(API_KEY);
+    } catch (error) {
+      throw new Error('Neural Sync AI not available. Please check your connection.');
+    }
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.3, // Lower temperature for more consistent code
+        topK: 10,
+        topP: 0.8,
+        maxOutputTokens: 500, // More tokens for code examples
+        candidateCount: 1,
+      }
+    });
+
+    const lastQuestion = recentTranscript.length > 0 
+      ? recentTranscript[recentTranscript.length - 1].text 
+      : '';
+
+    const prompt = `You are a senior software engineer providing code examples for interview questions.
+
+CANDIDATE PROFILE:
+- Position: ${context.jobTitle}
+- Company: ${context.companyName}
+- Interview Type: ${context.meetingType}
+
+CANDIDATE BACKGROUND:
+${context.resumeText.slice(0, 800)}
+
+INTERVIEWER'S QUESTION:
+"${lastQuestion}"
+
+INSTRUCTIONS:
+- Analyze if this question requires a code example or implementation
+- If it's a technical/coding question, provide clean, well-commented code
+- Use appropriate programming language based on the job requirements
+- Include proper formatting with line breaks and indentation
+- Add brief explanations for complex logic
+- If it's not a coding question, respond with "No code can be provided for this question"
+
+Provide code example:`;
+
+    console.log('Neural Sync generating code response...');
+    const startTime = Date.now();
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    const endTime = Date.now();
+    console.log(`Neural Sync code response generated in ${endTime - startTime}ms`);
+    
+    // Check if the question is suitable for code
+    const questionLower = lastQuestion.toLowerCase();
+    const codeKeywords = [
+      'code', 'implement', 'function', 'algorithm', 'write', 'program',
+      'solve', 'debug', 'optimize', 'class', 'method', 'api', 'database',
+      'query', 'script', 'logic', 'syntax', 'framework', 'library'
+    ];
+    
+    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword));
+    
+    if (!isCodeQuestion || !text || text.length < 20) {
+      return "No code can be provided for this question. This appears to be a non-technical question that doesn't require a code implementation.";
+    }
+    
+    return text;
+    
+  } catch (error) {
+    console.error('Neural Sync code generation error:', error);
+    return "No code can be provided for this question due to a technical error. Please try again.";
+  }
+};
+
 export const generateMeetingSummary = async (
   context: MeetingContext,
   fullTranscript: TranscriptEntry[]

@@ -15,11 +15,12 @@ import {
   BarChart3,
   Play,
   Send,
-  Crown
+  Crown,
+  Code
 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { MeetingContext, AIResponse } from '../types';
-import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady } from '../services/geminiService';
+import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { usePremium } from '../contexts/PremiumContext';
 
 interface MeetingScreenProps {
@@ -51,7 +52,9 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   } = useSpeechRecognition();
 
   const [aiResponses, setAiResponses] = useState<AIResponse[]>([]);
+  const [codeResponses, setCodeResponses] = useState<AIResponse[]>([]);
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
   const [meetingSummary, setMeetingSummary] = useState('');
@@ -82,19 +85,19 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     checkAPI();
   }, []);
 
-  // Auto-pause recording when new transcript entry is added
+  // Auto-stop recording when new transcript entry is added
   useEffect(() => {
     if (transcript.length > 0 && isListening) {
       const lastEntry = transcript[transcript.length - 1];
       const timeSinceLastEntry = Date.now() - lastEntry.timestamp.getTime();
       
-      // Auto-pause after getting a question (with small delay to ensure complete capture)
+      // Auto-stop after getting a question (with small delay to ensure complete capture)
       if (timeSinceLastEntry < 1000) {
         setTimeout(() => {
           if (isListening) {
             stopListening();
             setRecordingState('paused');
-            showNotification('success', 'Question captured! Click "Continue Recording" for next question.');
+            showNotification('success', 'Question captured! Recording stopped automatically.');
           }
         }, 1500);
       }
@@ -189,6 +192,59 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     }
   };
 
+  const handleGenerateCode = async (questionText?: string) => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    // Always prioritize manual input if present
+    const questionToUse = questionText && questionText.trim()
+      ? questionText.trim()
+      : (transcript.length > 0 ? transcript[transcript.length - 1]?.text : '');
+    
+    if (!questionToUse) {
+      showNotification('error', 'Please record a question or type one manually');
+      return;
+    }
+
+    setIsGeneratingCode(true);
+    const startTime = Date.now();
+    try {
+      // If manual input, create a transcript entry for the AI
+      let transcriptForAI = transcript;
+      if (questionText && questionText.trim()) {
+        transcriptForAI = [
+          {
+            id: Date.now().toString(),
+            text: questionToUse,
+            timestamp: new Date(),
+            confidence: 1.0
+          }
+        ];
+      }
+      const codeResponse = await generateCodeResponse(meetingContext!, transcriptForAI);
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+      
+      const aiCodeResponse: AIResponse = {
+        id: Date.now().toString(),
+        query: questionToUse,
+        response: codeResponse,
+        timestamp: new Date()
+      };
+      
+      setCodeResponses(prev => [aiCodeResponse, ...prev]);
+      showNotification('success', `Code response generated in ${responseTime}ms!`);
+    } catch (error) {
+      console.error('Error generating code:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate code response';
+      showNotification('error', errorMessage);
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  };
+
   const handleManualQuestionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (manualQuestion.trim()) {
@@ -266,7 +322,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="px-4 py-6 mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - AI Response & Summary */}
+          {/* Left Column - AI Response & Code */}
           <div className="space-y-6 lg:col-span-2">
             {/* AI Response Generation - TOP PRIORITY */}
             <div className="p-6 bg-white border-2 border-indigo-100 shadow-lg rounded-2xl">
@@ -285,23 +341,42 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     </span>
                   )}
                 </h3>
-                <button
-                  onClick={() => handleGenerateResponse()}
-                  disabled={isGeneratingResponse || (!transcript.length && !manualQuestion.trim())}
-                  className="flex items-center px-8 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGeneratingResponse ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-5 h-5" />
-                      <span>Get Instant Response</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => handleGenerateResponse()}
+                    disabled={isGeneratingResponse || (!transcript.length && !manualQuestion.trim())}
+                    className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingResponse ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        <span>Get Instant Response</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleGenerateCode()}
+                    disabled={isGeneratingCode || (!transcript.length && !manualQuestion.trim())}
+                    className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingCode ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Code className="w-5 h-5" />
+                        <span>Get Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Manual Question Input - ENHANCED */}
@@ -335,13 +410,13 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               {/* AI Responses - ENHANCED SIZE AND SPACING */}
               <div 
                 ref={aiResponsesRef}
-                className="space-y-6 max-h-[600px] overflow-y-auto"
+                className="space-y-6 max-h-[400px] overflow-y-auto"
               >
                 {aiResponses.length === 0 ? (
-                  <div className="py-16 text-center text-gray-500">
-                    <Brain className="w-20 h-20 mx-auto mb-6 opacity-30" />
-                    <p className="text-xl font-medium">AI responses will appear here</p>
-                    <p className="mt-2 text-base">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
+                  <div className="py-12 text-center text-gray-500">
+                    <Brain className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium">AI responses will appear here</p>
+                    <p className="mt-2 text-sm">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
                   </div>
                 ) : (
                   aiResponses.map((response) => (
@@ -367,11 +442,51 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                         <p className="text-sm font-medium text-gray-600">Question:</p>
                         <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
                       </div>
-                      <p className="text-lg font-medium leading-relaxed text-gray-900">{response.response}</p>
+                      <p className="text-base font-medium leading-relaxed text-gray-900">{response.response}</p>
                     </div>
                   ))
                 )}
               </div>
+
+              {/* Code Responses Section */}
+              {codeResponses.length > 0 && (
+                <div className="mt-8">
+                  <h4 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
+                    <Code className="w-5 h-5 mr-2 text-green-600" />
+                    Code Responses
+                  </h4>
+                  <div className="space-y-6 max-h-[400px] overflow-y-auto">
+                    {codeResponses.map((response) => (
+                      <div key={response.id} className="p-6 border border-green-100 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                        <div className="flex items-start justify-between mb-4">
+                          <span className="px-3 py-1 text-xs font-bold tracking-wide text-green-600 uppercase bg-green-100 rounded-full">
+                            Code Response
+                          </span>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => copyToClipboard(response.response)}
+                              className="p-2 transition-colors rounded-lg hover:bg-white/50"
+                              title="Copy code"
+                            >
+                              <Copy className="w-4 h-4 text-gray-600" />
+                            </button>
+                            <span className="mt-1 text-xs text-gray-500">
+                              {response.timestamp.toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-600">Question:</p>
+                          <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
+                        </div>
+                        <div className="p-4 font-mono text-sm bg-gray-900 rounded-lg">
+                          <pre className="text-green-400 whitespace-pre-wrap">{response.response}</pre>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Smart Tips & Summary */}
@@ -592,7 +707,11 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                   <div className="text-2xl font-bold text-purple-600">{aiResponses.length}</div>
                   <div className="text-xs text-gray-600">AI Responses</div>
                 </div>
-                <div className="col-span-2 text-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{codeResponses.length}</div>
+                  <div className="text-xs text-gray-600">Code Responses</div>
+                </div>
+                <div className="text-center">
                   <div className="text-lg font-bold text-emerald-600">
                     {Math.floor((Date.now() - startTime.current.getTime()) / 60000)} min
                   </div>
@@ -614,7 +733,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
               <h3 className="mb-4 text-2xl font-bold text-gray-900">Premium Feature</h3>
               <p className="mb-6 text-gray-600">
-                Upgrade to Premium to access unlimited AI responses, advanced features, and priority support.
+                Upgrade to Premium to access unlimited AI responses, code generation, advanced features, and priority support.
               </p>
               <div className="flex space-x-3">
                 <button
