@@ -11,13 +11,14 @@ import {
   Download,
   CheckCircle,
   AlertCircle,
-  Play,
-  Pause,
   RotateCcw,
   Eye,
-  Link
+  Link,
+  Globe,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { usePersistentSpeechRecognition } from '../hooks/usePersistentSpeechRecognition';
 
 interface LiveSession {
   id: string;
@@ -27,6 +28,7 @@ interface LiveSession {
   startTime: Date;
   lastUpdate: Date;
   viewerCount: number;
+  hostId: string;
 }
 
 export const LiveRecording: React.FC = () => {
@@ -34,15 +36,17 @@ export const LiveRecording: React.FC = () => {
   const navigate = useNavigate();
   const [currentSession, setCurrentSession] = useState<LiveSession | null>(null);
   const [isHost, setIsHost] = useState(!sessionId);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [sessionTitle, setSessionTitle] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
+  const [isSessionStarted, setIsSessionStarted] = useState(false);
   
   const transcriptRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptLength = useRef(0);
+  const hostId = useRef(Math.random().toString(36).substr(2, 9));
 
   const {
     isListening,
@@ -50,8 +54,9 @@ export const LiveRecording: React.FC = () => {
     startListening,
     stopListening,
     clearTranscript,
-    error: speechError
-  } = useSpeechRecognition();
+    error: speechError,
+    isSupported
+  } = usePersistentSpeechRecognition();
 
   // Generate unique session ID
   const generateSessionId = useCallback(() => {
@@ -59,30 +64,43 @@ export const LiveRecording: React.FC = () => {
   }, []);
 
   // Show notification
-  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+  const showNotification = useCallback((type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
+    setTimeout(() => setNotification(null), 5000);
   }, []);
 
-  // Save session to localStorage (simulating real-time database)
+  // Save session to localStorage with better error handling
   const saveSession = useCallback((session: LiveSession) => {
-    localStorage.setItem(`live_session_${session.id}`, JSON.stringify(session));
-    localStorage.setItem('live_sessions_list', JSON.stringify([
-      ...JSON.parse(localStorage.getItem('live_sessions_list') || '[]').filter((id: string) => id !== session.id),
-      session.id
-    ]));
-  }, []);
+    try {
+      localStorage.setItem(`live_session_${session.id}`, JSON.stringify(session));
+      
+      // Update sessions list
+      const existingSessions = JSON.parse(localStorage.getItem('live_sessions_list') || '[]');
+      const updatedSessions = existingSessions.filter((id: string) => id !== session.id);
+      updatedSessions.push(session.id);
+      localStorage.setItem('live_sessions_list', JSON.stringify(updatedSessions));
+      
+      console.log('Session saved:', session.id);
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      showNotification('error', 'Failed to save session data');
+    }
+  }, [showNotification]);
 
   // Load session from localStorage
   const loadSession = useCallback((id: string): LiveSession | null => {
-    const sessionData = localStorage.getItem(`live_session_${id}`);
-    if (sessionData) {
-      const session = JSON.parse(sessionData);
-      return {
-        ...session,
-        startTime: new Date(session.startTime),
-        lastUpdate: new Date(session.lastUpdate)
-      };
+    try {
+      const sessionData = localStorage.getItem(`live_session_${id}`);
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        return {
+          ...session,
+          startTime: new Date(session.startTime),
+          lastUpdate: new Date(session.lastUpdate)
+        };
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
     }
     return null;
   }, []);
@@ -97,41 +115,47 @@ export const LiveRecording: React.FC = () => {
       isActive: false,
       startTime: new Date(),
       lastUpdate: new Date(),
-      viewerCount: 1
+      viewerCount: 1,
+      hostId: hostId.current
     };
     
     setCurrentSession(newSession);
     saveSession(newSession);
+    setIsSessionStarted(true);
     
     // Update URL without navigation
     window.history.pushState({}, '', `/live-recording/${newSessionId}`);
     
-    showNotification('success', 'Live recording session created!');
+    showNotification('success', 'Live recording session created! Share the URL to let others watch.');
     return newSession;
   }, [sessionTitle, generateSessionId, saveSession, showNotification]);
 
   // Start recording
   const handleStartRecording = useCallback(() => {
-    if (!currentSession) {
-      const session = createNewSession();
+    if (!isSupported) {
+      showNotification('error', 'Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    let session = currentSession;
+    if (!session) {
+      session = createNewSession();
       if (!session) return;
     }
 
     clearTranscript();
     startListening();
     
-    if (currentSession) {
-      const updatedSession = {
-        ...currentSession,
-        isActive: true,
-        lastUpdate: new Date()
-      };
-      setCurrentSession(updatedSession);
-      saveSession(updatedSession);
-    }
+    const updatedSession = {
+      ...session,
+      isActive: true,
+      lastUpdate: new Date()
+    };
+    setCurrentSession(updatedSession);
+    saveSession(updatedSession);
     
-    showNotification('success', 'Live recording started!');
-  }, [currentSession, createNewSession, clearTranscript, startListening, saveSession, showNotification]);
+    showNotification('success', 'Live recording started! Speak clearly into your microphone.');
+  }, [currentSession, createNewSession, clearTranscript, startListening, saveSession, showNotification, isSupported]);
 
   // Stop recording
   const handleStopRecording = useCallback(() => {
@@ -147,7 +171,7 @@ export const LiveRecording: React.FC = () => {
       saveSession(updatedSession);
     }
     
-    showNotification('success', 'Recording stopped.');
+    showNotification('info', 'Recording stopped. Click "Start Live Recording" to continue.');
   }, [currentSession, stopListening, saveSession, showNotification]);
 
   // Update transcript in real-time
@@ -169,7 +193,7 @@ export const LiveRecording: React.FC = () => {
     }
   }, [transcript, currentSession, isHost, saveSession]);
 
-  // Auto-scroll transcript
+  // Auto-scroll transcript to bottom
   useEffect(() => {
     if (transcriptRef.current && currentSession?.transcript) {
       const currentLength = currentSession.transcript.length;
@@ -180,7 +204,7 @@ export const LiveRecording: React.FC = () => {
     }
   }, [currentSession?.transcript]);
 
-  // Load existing session or create new one
+  // Load existing session or prepare for new one
   useEffect(() => {
     if (sessionId) {
       // Viewer mode - load existing session
@@ -189,9 +213,10 @@ export const LiveRecording: React.FC = () => {
         setCurrentSession(session);
         setIsHost(false);
         setConnectionStatus('connected');
-        showNotification('success', 'Connected to live session!');
+        setIsSessionStarted(true);
+        showNotification('success', 'Connected to live session! Updates will appear automatically.');
       } else {
-        showNotification('error', 'Session not found. It may have expired or been deleted.');
+        showNotification('error', 'Session not found. It may have expired or the URL is incorrect.');
         navigate('/live-recording');
       }
     } else {
@@ -213,11 +238,11 @@ export const LiveRecording: React.FC = () => {
           setConnectionStatus('connected');
           
           // Simulate viewer count (in real app, this would come from server)
-          setViewerCount(Math.floor(Math.random() * 5) + 1);
+          setViewerCount(Math.floor(Math.random() * 3) + 1);
         } else {
           setConnectionStatus('disconnected');
         }
-      }, 2000); // Poll every 2 seconds
+      }, 1500); // Poll every 1.5 seconds for better responsiveness
 
       return () => {
         if (pollIntervalRef.current) {
@@ -236,7 +261,7 @@ export const LiveRecording: React.FC = () => {
 
     const shareUrl = `${window.location.origin}/live-recording/${currentSession.id}`;
     navigator.clipboard.writeText(shareUrl);
-    showNotification('success', 'Share link copied to clipboard!');
+    showNotification('success', 'Share link copied! Anyone can view this session without signing up.');
   }, [currentSession, showNotification]);
 
   // Download transcript
@@ -256,7 +281,7 @@ export const LiveRecording: React.FC = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showNotification('success', 'Transcript downloaded!');
+    showNotification('success', 'Transcript downloaded successfully!');
   }, [currentSession, showNotification]);
 
   // Clear session
@@ -289,8 +314,8 @@ export const LiveRecording: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl mb-4 shadow-lg">
@@ -300,18 +325,33 @@ export const LiveRecording: React.FC = () => {
             Live Voice Recording
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            {isHost ? 'Record your voice in real-time and share with others instantly' : 'Viewing live recording session'}
+            {isHost ? 'Record your voice in real-time and share with others instantly - no login required for viewers' : 'Viewing live recording session - updates automatically'}
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Recording Area */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Browser Support Warning */}
+        {!isSupported && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="flex items-center p-4 border border-red-200 bg-red-50 rounded-xl">
+              <AlertCircle className="w-5 h-5 mr-3 text-red-500 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-red-800">Speech Recognition Not Supported</p>
+                <p className="text-red-700 text-sm mt-1">
+                  Please use Chrome, Edge, or Safari for the best experience. Firefox has limited support.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Main Recording Area - Takes up more space */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Session Info & Controls */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex-1">
-                  {isHost && !currentSession ? (
+                  {isHost && !isSessionStarted ? (
                     <div className="space-y-3">
                       <label className="block text-sm font-medium text-gray-700">
                         Session Title (Optional)
@@ -361,7 +401,7 @@ export const LiveRecording: React.FC = () => {
                           <div className={`w-2 h-2 rounded-full ${
                             currentSession.isActive ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
                           }`} />
-                          <span>{currentSession.isActive ? 'Recording' : 'Stopped'}</span>
+                          <span>{currentSession.isActive ? 'LIVE RECORDING' : 'STOPPED'}</span>
                         </div>
                       </div>
                     </div>
@@ -375,11 +415,9 @@ export const LiveRecording: React.FC = () => {
                     connectionStatus === 'connecting' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-red-100 text-red-700'
                   }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      connectionStatus === 'connected' ? 'bg-green-500' :
-                      connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                      'bg-red-500'
-                    }`} />
+                    {connectionStatus === 'connected' ? <Wifi className="w-4 h-4" /> :
+                     connectionStatus === 'connecting' ? <Wifi className="w-4 h-4 animate-pulse" /> :
+                     <WifiOff className="w-4 h-4" />}
                     <span className="capitalize">{connectionStatus}</span>
                   </div>
                 )}
@@ -391,7 +429,8 @@ export const LiveRecording: React.FC = () => {
                   {!isListening ? (
                     <button
                       onClick={handleStartRecording}
-                      className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:from-red-600 hover:to-pink-600 shadow-lg"
+                      disabled={!isSupported}
+                      className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:from-red-600 hover:to-pink-600 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Mic className="w-5 h-5" />
                       <span>Start Live Recording</span>
@@ -399,7 +438,7 @@ export const LiveRecording: React.FC = () => {
                   ) : (
                     <button
                       onClick={handleStopRecording}
-                      className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl hover:from-gray-700 hover:to-gray-800 shadow-lg animate-pulse"
+                      className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl hover:from-gray-700 hover:to-gray-800 shadow-lg"
                     >
                       <MicOff className="w-5 h-5" />
                       <span>Stop Recording</span>
@@ -413,7 +452,7 @@ export const LiveRecording: React.FC = () => {
                         className="flex items-center px-4 py-3 space-x-2 font-medium text-indigo-600 transition-colors bg-indigo-50 rounded-xl hover:bg-indigo-100"
                       >
                         <Share2 className="w-4 h-4" />
-                        <span>Share</span>
+                        <span>Share Link</span>
                       </button>
 
                       <button
@@ -449,17 +488,22 @@ export const LiveRecording: React.FC = () => {
               {isListening && isHost && (
                 <div className="flex items-center p-4 mb-4 border border-red-200 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl">
                   <div className="w-4 h-4 mr-3 bg-red-500 rounded-full animate-pulse" />
-                  <span className="font-medium text-red-700">Recording in progress... Speak clearly into your microphone</span>
+                  <span className="font-medium text-red-700">🎙️ LIVE RECORDING - Speak clearly into your microphone. Recording will continue until you click "Stop Recording".</span>
                 </div>
               )}
             </div>
 
-            {/* Live Transcript Display */}
+            {/* Live Transcript Display - FULL WIDTH */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <Volume2 className="w-5 h-5 mr-2 text-red-500" />
                   Live Transcript
+                  {currentSession?.isActive && (
+                    <span className="ml-2 px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full animate-pulse">
+                      LIVE
+                    </span>
+                  )}
                 </h3>
                 {currentSession?.transcript && (
                   <span className="text-sm text-gray-500">
@@ -468,27 +512,29 @@ export const LiveRecording: React.FC = () => {
                 )}
               </div>
 
+              {/* LARGE TRANSCRIPT CONTAINER - FULL WIDTH */}
               <div 
                 ref={transcriptRef}
-                className="min-h-[400px] max-h-[600px] overflow-y-auto p-6 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200"
+                className="w-full min-h-[500px] max-h-[700px] overflow-y-auto p-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200"
+                style={{ width: '100%' }}
               >
                 {currentSession?.transcript ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 w-full">
                     {currentSession.transcript.split('\n\n').map((entry, index) => (
-                      <div key={index} className="p-4 bg-white rounded-lg shadow-sm border-l-4 border-red-400">
-                        <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{entry}</p>
+                      <div key={index} className="w-full p-6 bg-white rounded-lg shadow-sm border-l-4 border-red-400">
+                        <p className="text-gray-900 leading-relaxed whitespace-pre-wrap text-base">{entry}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="flex items-center justify-center h-full text-gray-500 w-full">
                     <div className="text-center">
-                      <Mic className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                      <p className="text-lg font-medium">
+                      <Mic className="w-20 h-20 mx-auto mb-6 opacity-30" />
+                      <p className="text-xl font-medium mb-2">
                         {isHost ? 'Click "Start Live Recording" to begin' : 'Waiting for host to start recording...'}
                       </p>
-                      <p className="mt-2 text-sm">
-                        {isHost ? 'Your voice will be converted to text in real-time' : 'Live transcript will appear here when recording starts'}
+                      <p className="text-base text-gray-400">
+                        {isHost ? 'Your voice will be converted to text in real-time and displayed here' : 'Live transcript will appear here when recording starts'}
                       </p>
                     </div>
                   </div>
@@ -497,13 +543,13 @@ export const LiveRecording: React.FC = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Smaller */}
           <div className="space-y-6">
             {/* Session Details */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Users className="w-5 h-5 mr-2 text-indigo-500" />
-                Session Details
+                Session Info
               </h3>
               
               {currentSession ? (
@@ -544,9 +590,9 @@ export const LiveRecording: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                  <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-200">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-indigo-600">
+                      <div className={`text-2xl font-bold ${currentSession.isActive ? 'text-red-600' : 'text-gray-600'}`}>
                         {currentSession.isActive ? 'LIVE' : 'STOPPED'}
                       </div>
                       <div className="text-xs text-gray-600">Status</div>
@@ -568,6 +614,23 @@ export const LiveRecording: React.FC = () => {
               )}
             </div>
 
+            {/* Sharing Info */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
+              <h3 className="text-lg font-semibold text-green-900 mb-3 flex items-center">
+                <Globe className="w-5 h-5 mr-2" />
+                Easy Sharing
+              </h3>
+              <div className="space-y-2 text-sm text-green-800">
+                <p>✅ No login required for viewers</p>
+                <p>✅ Works on any device</p>
+                <p>✅ Real-time updates</p>
+                <p>✅ Instant access via URL</p>
+              </div>
+              <p className="text-xs text-green-700 mt-3">
+                Perfect for meetings, lectures, interviews, and collaborative sessions.
+              </p>
+            </div>
+
             {/* Instructions */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
               <h3 className="text-lg font-semibold text-blue-900 mb-4">
@@ -578,19 +641,19 @@ export const LiveRecording: React.FC = () => {
                   <>
                     <div className="flex items-start space-x-2">
                       <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">1</div>
-                      <p>Click "Start Live Recording" to begin capturing your voice</p>
+                      <p>Click "Start Live Recording" to begin</p>
                     </div>
                     <div className="flex items-start space-x-2">
                       <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">2</div>
-                      <p>Speak clearly - your voice will be converted to text in real-time</p>
+                      <p>Speak clearly - recording continues until you stop it</p>
                     </div>
                     <div className="flex items-start space-x-2">
                       <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">3</div>
-                      <p>Share the session URL with others to let them view live</p>
+                      <p>Share the URL with others for live viewing</p>
                     </div>
                     <div className="flex items-start space-x-2">
                       <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-                      <p>Download the transcript when finished</p>
+                      <p>Click "Stop Recording" when finished</p>
                     </div>
                   </>
                 ) : (
@@ -601,7 +664,7 @@ export const LiveRecording: React.FC = () => {
                     </div>
                     <div className="flex items-start space-x-2">
                       <Volume2 className="w-4 h-4 mt-1 text-blue-600" />
-                      <p>The transcript updates automatically as the host speaks</p>
+                      <p>Transcript updates automatically every 1.5 seconds</p>
                     </div>
                     <div className="flex items-start space-x-2">
                       <Users className="w-4 h-4 mt-1 text-blue-600" />
@@ -619,7 +682,7 @@ export const LiveRecording: React.FC = () => {
                 <p>✅ Chrome (Recommended)</p>
                 <p>✅ Edge</p>
                 <p>✅ Safari</p>
-                <p>❌ Firefox (Limited support)</p>
+                <p>⚠️ Firefox (Limited)</p>
               </div>
               <p className="text-xs text-amber-700 mt-3">
                 For best results, use Chrome or Edge with microphone permissions enabled.
@@ -632,10 +695,14 @@ export const LiveRecording: React.FC = () => {
       {/* Notification */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-md ${
-          notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          notification.type === 'success' ? 'bg-green-500 text-white' : 
+          notification.type === 'error' ? 'bg-red-500 text-white' : 
+          'bg-blue-500 text-white'
         }`}>
           {notification.type === 'success' ? (
             <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          ) : notification.type === 'error' ? (
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
           ) : (
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
           )}
