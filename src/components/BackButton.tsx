@@ -25,6 +25,11 @@ export const BackButton: React.FC = () => {
     return null;
   }
 
+  // Don't show back button on live recording pages (they have their own navigation)
+  if (location.pathname.startsWith('/live-recording')) {
+    return null;
+  }
+
   const handleBack = () => {
     // Check if there's history to go back to
     if (window.history.length > 1) {
