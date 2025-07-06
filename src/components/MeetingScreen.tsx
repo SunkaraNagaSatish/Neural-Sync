@@ -17,7 +17,7 @@ import {
   Crown,
   Code
 } from 'lucide-react';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useMeetingSpeechRecognition } from '../hooks/useMeetingSpeechRecognition';
 import { MeetingContext, AIResponse, TranscriptEntry } from '../types';
 import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { usePremium } from '../contexts/PremiumContext';
@@ -115,7 +115,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     stopListening,
     clearTranscript,
     error: speechError
-  } = useSpeechRecognition();
+  } = useMeetingSpeechRecognition();
 
   // Main transcript state - combines stored and new entries
   const [allTranscript, setAllTranscript] = useState(storedTranscript);
@@ -157,7 +157,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
         console.log('Added new speech entry to transcript:', latestEntry.text);
       }
     }
-  }, [transcript]);
+  }, [transcript, allTranscript]);
 
   // Save AI responses to session storage
   useEffect(() => {
