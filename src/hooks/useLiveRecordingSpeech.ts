@@ -31,6 +31,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   const sessionIdRef = useRef<string>('');
   const retryCountRef = useRef(0);
   const maxRetries = 3;
+  const lastProcessedTextRef = useRef<string>('');
 
   // Check browser support
   useEffect(() => {
@@ -41,13 +42,13 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     }
   }, []);
 
-  // FIXED: Ultra-fast processing with proper line separation
+  // COMPLETELY FIXED: No more repetition, proper line separation
   const processResults = useCallback((event: any) => {
     try {
       const now = Date.now();
       
-      // Throttle for performance (100ms for stability)
-      if (now - lastUpdateTimeRef.current < 100) return;
+      // Throttle for performance but allow real-time updates
+      if (now - lastUpdateTimeRef.current < 200) return;
       lastUpdateTimeRef.current = now;
 
       let finalText = '';
@@ -67,19 +68,21 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         }
       }
 
-      // FIXED: Handle final results (permanent entries) - NO REPETITION
+      // FIXED: Handle final results ONLY - NO DUPLICATES
       if (finalText.trim()) {
         const cleanFinalText = finalText.trim();
         
-        // Create unique key to prevent duplicates
-        const uniqueKey = `${cleanFinalText}_${Math.floor(now / 1000)}`;
-        
-        // Prevent duplicates and ensure minimum length
-        if (!processedTextsRef.current.has(uniqueKey) && cleanFinalText.length > 1) {
-          processedTextsRef.current.add(uniqueKey);
+        // STRICT duplicate prevention
+        if (cleanFinalText !== lastProcessedTextRef.current && 
+            cleanFinalText.length > 2 && 
+            !processedTextsRef.current.has(cleanFinalText.toLowerCase())) {
+          
+          // Mark as processed
+          lastProcessedTextRef.current = cleanFinalText;
+          processedTextsRef.current.add(cleanFinalText.toLowerCase());
           
           const finalEntry: TranscriptEntry = {
-            id: `${sessionIdRef.current}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            id: `final_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             text: cleanFinalText,
             timestamp: new Date(),
             confidence: 1.0,
@@ -87,36 +90,44 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
           };
 
           setTranscript(prev => {
-            // FIXED: Only add if not already present
-            const exists = prev.some(entry => 
-              entry.text.trim().toLowerCase() === cleanFinalText.toLowerCase() &&
-              Math.abs(entry.timestamp.getTime() - finalEntry.timestamp.getTime()) < 2000
+            // Remove any interim entries and add final entry
+            const filtered = prev.filter(entry => !entry.id.startsWith('interim_'));
+            
+            // Double-check for duplicates
+            const exists = filtered.some(entry => 
+              entry.text.trim().toLowerCase() === cleanFinalText.toLowerCase()
             );
             
             if (!exists) {
-              console.log('✅ NEW LINE ADDED:', cleanFinalText);
-              return [...prev, finalEntry];
+              console.log('✅ NEW FINAL LINE:', cleanFinalText);
+              return [...filtered, finalEntry];
             }
-            return prev;
+            
+            return filtered;
           });
         }
       }
 
-      // FIXED: Handle interim results (live preview) - show but don't save
-      if (interimText.trim()) {
-        const interimEntry: TranscriptEntry = {
-          id: 'interim_preview',
-          text: interimText.trim(),
-          timestamp: new Date(),
-          confidence: 0.7,
-          speaker: 'User'
-        };
+      // FIXED: Handle interim results for live preview ONLY
+      else if (interimText.trim()) {
+        const cleanInterimText = interimText.trim();
+        
+        // Only show interim if it's different from last processed final text
+        if (cleanInterimText !== lastProcessedTextRef.current && cleanInterimText.length > 2) {
+          const interimEntry: TranscriptEntry = {
+            id: 'interim_live_preview',
+            text: cleanInterimText,
+            timestamp: new Date(),
+            confidence: 0.7,
+            speaker: 'User'
+          };
 
-        setTranscript(prev => {
-          // Remove any existing interim and add new one
-          const filtered = prev.filter(entry => entry.id !== 'interim_preview');
-          return [...filtered, interimEntry];
-        });
+          setTranscript(prev => {
+            // Remove any existing interim and add new one
+            const filtered = prev.filter(entry => entry.id !== 'interim_live_preview');
+            return [...filtered, interimEntry];
+          });
+        }
       }
     } catch (error) {
       console.error('Error processing speech results:', error);
@@ -139,9 +150,10 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
       }
     }
 
-    // FIXED: Reset all state properly
+    // RESET ALL STATE COMPLETELY
     isManualStopRef.current = false;
     processedTextsRef.current.clear();
+    lastProcessedTextRef.current = '';
     sessionIdRef.current = Date.now().toString();
     setError(null);
 
@@ -156,7 +168,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        console.log('🎤 LIVE recording started - continuous mode');
+        console.log('🎤 LIVE recording started - NO REPETITION MODE');
         setIsListening(true);
         setError(null);
         retryCountRef.current = 0;
@@ -215,6 +227,9 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         console.log('Speech recognition ended');
         setIsListening(false);
         
+        // Remove any interim entries when ending
+        setTranscript(prev => prev.filter(entry => !entry.id.startsWith('interim_')));
+        
         // FIXED: Auto-restart ONLY if not manually stopped and no errors
         if (!isManualStopRef.current && retryCountRef.current === 0) {
           setTimeout(() => {
@@ -237,12 +252,12 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   }, [isSupported, processResults]);
 
   const stopListening = useCallback(() => {
-    console.log('🛑 Stopping live recording');
+    console.log('🛑 Stopping live recording - CLEAN STOP');
     isManualStopRef.current = true;
     retryCountRef.current = 0;
 
     // Remove any interim entries before stopping
-    setTranscript(prev => prev.filter(entry => entry.id !== 'interim_preview'));
+    setTranscript(prev => prev.filter(entry => !entry.id.startsWith('interim_')));
 
     if (recognitionRef.current) {
       try {
@@ -260,8 +275,9 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   const clearTranscript = useCallback(() => {
     setTranscript([]);
     processedTextsRef.current.clear();
+    lastProcessedTextRef.current = '';
     sessionIdRef.current = '';
-    console.log('Live transcript cleared');
+    console.log('Live transcript cleared - COMPLETE RESET');
   }, []);
 
   // Cleanup on unmount

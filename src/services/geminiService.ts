@@ -157,7 +157,7 @@ Generate a natural, professional response:`;
   }
 };
 
-// ENHANCED: Generate code response for technical questions with better context awareness
+// FIXED: Generate code response with key skills binding
 export const generateCodeResponse = async (
   context: MeetingContext,
   recentTranscript: TranscriptEntry[]
@@ -186,7 +186,7 @@ export const generateCodeResponse = async (
       ? recentTranscript[recentTranscript.length - 1].text 
       : '';
 
-    // Determine the primary technology from key skills and job title
+    // FIXED: Determine the primary technology from key skills and job title
     const keySkillsLower = context.keySkills.toLowerCase();
     const jobTitleLower = context.jobTitle.toLowerCase();
     const questionLower = lastQuestion.toLowerCase();
@@ -206,7 +206,7 @@ export const generateCodeResponse = async (
       primaryTech = 'Vue.js';
     }
 
-    // Enhanced prompt specifically designed for code generation with key skills context
+    // ENHANCED: Code generation prompt with key skills context
     const prompt = `You are a senior software engineer providing code examples for technical interview questions.
 
 CANDIDATE PROFILE:
