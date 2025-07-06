@@ -8,7 +8,7 @@ interface TranscriptEntry {
   speaker?: string;
 }
 
-interface UseLiveRecordingSpeechReturn {
+interface UseSpeechRecognitionReturn {
   isListening: boolean;
   transcript: TranscriptEntry[];
   startListening: () => void;
@@ -18,7 +18,7 @@ interface UseLiveRecordingSpeechReturn {
   isSupported: boolean;
 }
 
-export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
+export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
