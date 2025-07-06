@@ -28,7 +28,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   const isManualStopRef = useRef(false);
   const processedTextsRef = useRef<Set<string>>(new Set());
   const lastUpdateTimeRef = useRef<number>(0);
-  const currentInterimRef = useRef<string>('');
+  const sessionIdRef = useRef<string>('');
   const retryCountRef = useRef(0);
   const maxRetries = 3;
 
@@ -41,13 +41,13 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     }
   }, []);
 
-  // ULTRA-FAST processing with live interim results
+  // FIXED: Ultra-fast processing with proper line separation
   const processResults = useCallback((event: any) => {
     try {
       const now = Date.now();
       
-      // Ultra-fast throttling for instant updates (50ms)
-      if (now - lastUpdateTimeRef.current < 50) return;
+      // Throttle for performance (100ms for stability)
+      if (now - lastUpdateTimeRef.current < 100) return;
       lastUpdateTimeRef.current = now;
 
       let finalText = '';
@@ -67,16 +67,19 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         }
       }
 
-      // Handle final results (permanent entries)
+      // FIXED: Handle final results (permanent entries) - NO REPETITION
       if (finalText.trim()) {
         const cleanFinalText = finalText.trim();
         
+        // Create unique key to prevent duplicates
+        const uniqueKey = `${cleanFinalText}_${Math.floor(now / 1000)}`;
+        
         // Prevent duplicates and ensure minimum length
-        if (!processedTextsRef.current.has(cleanFinalText) && cleanFinalText.length > 1) {
-          processedTextsRef.current.add(cleanFinalText);
+        if (!processedTextsRef.current.has(uniqueKey) && cleanFinalText.length > 1) {
+          processedTextsRef.current.add(uniqueKey);
           
           const finalEntry: TranscriptEntry = {
-            id: Date.now().toString() + '_final_' + Math.random().toString(36).substr(2, 5),
+            id: `${sessionIdRef.current}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             text: cleanFinalText,
             timestamp: new Date(),
             confidence: 1.0,
@@ -84,31 +87,34 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
           };
 
           setTranscript(prev => {
-            // Remove any interim entries and add final
-            const filtered = prev.filter(entry => !entry.id.includes('interim'));
-            return [...filtered, finalEntry];
+            // FIXED: Only add if not already present
+            const exists = prev.some(entry => 
+              entry.text.trim().toLowerCase() === cleanFinalText.toLowerCase() &&
+              Math.abs(entry.timestamp.getTime() - finalEntry.timestamp.getTime()) < 2000
+            );
+            
+            if (!exists) {
+              console.log('✅ NEW LINE ADDED:', cleanFinalText);
+              return [...prev, finalEntry];
+            }
+            return prev;
           });
-
-          currentInterimRef.current = '';
-          console.log('✅ Final text added:', cleanFinalText);
         }
       }
 
-      // Handle interim results (live preview)
-      if (interimText.trim() && interimText.trim() !== currentInterimRef.current) {
-        currentInterimRef.current = interimText.trim();
-        
+      // FIXED: Handle interim results (live preview) - show but don't save
+      if (interimText.trim()) {
         const interimEntry: TranscriptEntry = {
-          id: 'interim_' + Date.now(),
-          text: currentInterimRef.current,
+          id: 'interim_preview',
+          text: interimText.trim(),
           timestamp: new Date(),
           confidence: 0.7,
           speaker: 'User'
         };
 
         setTranscript(prev => {
-          // Replace any existing interim entry
-          const filtered = prev.filter(entry => !entry.id.includes('interim'));
+          // Remove any existing interim and add new one
+          const filtered = prev.filter(entry => entry.id !== 'interim_preview');
           return [...filtered, interimEntry];
         });
       }
@@ -133,27 +139,27 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
       }
     }
 
-    // Reset all state
+    // FIXED: Reset all state properly
     isManualStopRef.current = false;
     processedTextsRef.current.clear();
-    currentInterimRef.current = '';
+    sessionIdRef.current = Date.now().toString();
     setError(null);
 
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       
-      // OPTIMIZED settings for speed and accuracy
+      // OPTIMIZED settings for continuous recording
       recognition.continuous = true;
-      recognition.interimResults = true; // CRITICAL for live updates
+      recognition.interimResults = true;
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        console.log('🎤 LIVE recording started - ultra-fast mode');
+        console.log('🎤 LIVE recording started - continuous mode');
         setIsListening(true);
         setError(null);
-        retryCountRef.current = 0; // Reset retry count on successful start
+        retryCountRef.current = 0;
       };
 
       recognition.onresult = processResults;
@@ -209,32 +215,14 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         console.log('Speech recognition ended');
         setIsListening(false);
         
-        // Finalize any interim text
-        if (currentInterimRef.current.trim()) {
-          const finalEntry: TranscriptEntry = {
-            id: Date.now().toString() + '_final_end',
-            text: currentInterimRef.current.trim(),
-            timestamp: new Date(),
-            confidence: 0.9,
-            speaker: 'User'
-          };
-
-          setTranscript(prev => {
-            const filtered = prev.filter(entry => !entry.id.includes('interim'));
-            return [...filtered, finalEntry];
-          });
-
-          currentInterimRef.current = '';
-        }
-        
-        // Auto-restart only if not manually stopped and no errors
+        // FIXED: Auto-restart ONLY if not manually stopped and no errors
         if (!isManualStopRef.current && retryCountRef.current === 0) {
           setTimeout(() => {
             if (!isManualStopRef.current) {
               console.log('🔄 Auto-restarting for continuous recording...');
               startListening();
             }
-          }, 500); // Slightly longer delay for stability
+          }, 1000); // 1 second delay for stability
         }
       };
 
@@ -253,23 +241,8 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     isManualStopRef.current = true;
     retryCountRef.current = 0;
 
-    // Finalize any interim text before stopping
-    if (currentInterimRef.current.trim()) {
-      const finalEntry: TranscriptEntry = {
-        id: Date.now().toString() + '_final_stop',
-        text: currentInterimRef.current.trim(),
-        timestamp: new Date(),
-        confidence: 0.9,
-        speaker: 'User'
-      };
-
-      setTranscript(prev => {
-        const filtered = prev.filter(entry => !entry.id.includes('interim'));
-        return [...filtered, finalEntry];
-      });
-
-      currentInterimRef.current = '';
-    }
+    // Remove any interim entries before stopping
+    setTranscript(prev => prev.filter(entry => entry.id !== 'interim_preview'));
 
     if (recognitionRef.current) {
       try {
@@ -287,7 +260,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   const clearTranscript = useCallback(() => {
     setTranscript([]);
     processedTextsRef.current.clear();
-    currentInterimRef.current = '';
+    sessionIdRef.current = '';
     console.log('Live transcript cleared');
   }, []);
 

@@ -4,6 +4,7 @@ export interface MeetingContext {
   jobDescription: string;
   meetingType: string;
   resumeText: string;
+  keySkills: string; // NEW: Key skills field
 }
 
 export interface TranscriptEntry {

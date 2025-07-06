@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain } from 'lucide-react';
+import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain, Target } from 'lucide-react';
 import { parsePDF, validatePDFFile, extractTextFromPDFAlternative, testPDFJSAvailability } from '../services/pdfParser';
 import { MeetingContext } from '../types';
 
@@ -21,7 +21,8 @@ export const SetupScreen: React.FC = () => {
     companyName: '',
     jobDescription: '',
     meetingType: '',
-    resumeText: ''
+    resumeText: '',
+    keySkills: '' // NEW: Key skills field
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isParsingPDF, setIsParsingPDF] = useState(false);
@@ -127,6 +128,11 @@ export const SetupScreen: React.FC = () => {
     } else if (formData.resumeText.trim().length < 50) {
       newErrors.resume = 'Resume text is too short. Please provide more details.';
     }
+    if (!formData.keySkills.trim()) {
+      newErrors.keySkills = 'Please enter your key skills for better AI responses';
+    } else if (formData.keySkills.trim().length < 10) {
+      newErrors.keySkills = 'Please provide more detailed key skills (at least 10 characters)';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -141,13 +147,14 @@ export const SetupScreen: React.FC = () => {
     
     try {
       if (validateForm()) {
-        // Create the meeting context
+        // Create the meeting context with key skills
         const meetingContext: MeetingContext = {
           jobTitle: formData.jobTitle.trim(),
           companyName: formData.companyName.trim(),
           jobDescription: formData.jobDescription.trim(),
           meetingType: formData.meetingType,
-          resumeText: formData.resumeText.trim()
+          resumeText: formData.resumeText.trim(),
+          keySkills: formData.keySkills.trim() // NEW: Include key skills
         };
         
         console.log('Navigating to meeting with context:', meetingContext);
@@ -298,6 +305,39 @@ export const SetupScreen: React.FC = () => {
                 <div className="flex items-center text-green-600 text-sm bg-green-50 p-3 rounded-lg">
                   <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" />
                   <span>Resume content ready for use!</span>
+                </div>
+              )}
+            </div>
+
+            {/* NEW: Key Skills Input */}
+            <div className="space-y-3">
+              <label className="flex items-center text-lg font-semibold text-gray-900">
+                <Target className="w-5 h-5 mr-2" />
+                Key Skills & Technologies
+                <span className="ml-2 px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                  Important for AI
+                </span>
+              </label>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800 mb-3">
+                  <strong>Why this matters:</strong> When you ask incomplete questions like "diff between let and const", 
+                  the AI will use these skills to provide relevant, context-aware answers.
+                </p>
+                <p className="text-xs text-blue-600">
+                  Example: "JavaScript, React, Node.js, Python, SQL, AWS, Git, REST APIs, MongoDB"
+                </p>
+              </div>
+              <textarea
+                value={formData.keySkills}
+                onChange={(e) => setFormData(prev => ({ ...prev, keySkills: e.target.value }))}
+                rows={4}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors resize-none"
+                placeholder="List your key skills, technologies, and areas of expertise (e.g., JavaScript, React, Python, AWS, Machine Learning, etc.)"
+              />
+              {errors.keySkills && (
+                <div className="flex items-center text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.keySkills}
                 </div>
               )}
             </div>
