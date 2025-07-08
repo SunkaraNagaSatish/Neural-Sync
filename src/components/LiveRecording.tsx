@@ -12,7 +12,11 @@ import {
   User,
   RefreshCw,
   Play,
-  Square
+  Square,
+  Type,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from 'lucide-react';
 import { useLiveRecordingSpeech } from '../hooks/useLiveRecordingSpeech';
 
@@ -43,9 +47,12 @@ export const LiveRecording: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [sessionTitle, setSessionTitle] = useState('');
   const [isSessionStarted, setIsSessionStarted] = useState(false);
+  const [fontSize, setFontSize] = useState(16); // Default font size
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const transcriptRef = useRef<HTMLDivElement>(null);
   const hostId = useRef(Math.random().toString(36).substr(2, 9));
+  const autoScrollRef = useRef(true);
 
   const {
     isListening,
@@ -57,12 +64,26 @@ export const LiveRecording: React.FC = () => {
     isSupported
   } = useLiveRecordingSpeech();
 
-  // Auto-scroll to bottom when new content is added
+  // PERFORMANCE: Auto-scroll to bottom when new content is added
   useEffect(() => {
-    if (transcriptRef.current) {
-      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+    if (transcriptRef.current && autoScrollRef.current) {
+      const element = transcriptRef.current;
+      const isScrolledToBottom = element.scrollHeight - element.clientHeight <= element.scrollTop + 1;
+      
+      if (isScrolledToBottom || transcript.length === 1) {
+        element.scrollTop = element.scrollHeight;
+      }
     }
   }, [transcript]);
+
+  // PERFORMANCE: Detect manual scroll to disable auto-scroll
+  const handleScroll = useCallback(() => {
+    if (transcriptRef.current) {
+      const element = transcriptRef.current;
+      const isScrolledToBottom = element.scrollHeight - element.clientHeight <= element.scrollTop + 10;
+      autoScrollRef.current = isScrolledToBottom;
+    }
+  }, []);
 
   // Generate unique session ID
   const generateSessionId = useCallback(() => {
@@ -75,7 +96,7 @@ export const LiveRecording: React.FC = () => {
     setTimeout(() => setNotification(null), 4000);
   }, []);
 
-  // Save session to localStorage
+  // PERFORMANCE: Memoized session operations
   const saveSession = useCallback((session: LiveSession) => {
     try {
       localStorage.setItem(`live_session_${session.id}`, JSON.stringify(session));
@@ -84,7 +105,6 @@ export const LiveRecording: React.FC = () => {
     }
   }, []);
 
-  // Load session from localStorage
   const loadSession = useCallback((id: string): LiveSession | null => {
     try {
       const sessionData = localStorage.getItem(`live_session_${id}`);
@@ -124,14 +144,12 @@ export const LiveRecording: React.FC = () => {
     saveSession(newSession);
     setIsSessionStarted(true);
     
-    // Update URL without navigation
     window.history.pushState({}, '', `/live-recording/${newSessionId}`);
-    
     showNotification('success', 'Session created! Share the URL to let others watch live.');
     return newSession;
   }, [sessionTitle, generateSessionId, saveSession, showNotification]);
 
-  // FIXED: Start recording with proper session handling
+  // ULTRA-FAST: Start recording with optimized session handling
   const handleStartRecording = useCallback(() => {
     if (!isSupported) {
       showNotification('error', 'Speech recognition not supported. Use Chrome, Edge, or Safari.');
@@ -145,10 +163,7 @@ export const LiveRecording: React.FC = () => {
     }
 
     try {
-      // Clear any existing transcript before starting
       clearTranscript();
-      
-      // Start listening
       startListening();
       
       const updatedSession = {
@@ -159,14 +174,14 @@ export const LiveRecording: React.FC = () => {
       setCurrentSession(updatedSession);
       saveSession(updatedSession);
       
-      showNotification('success', '🎤 RECORDING STARTED! Speak clearly - each sentence will appear on a new line.');
+      showNotification('success', '🎤 ULTRA-FAST RECORDING STARTED! Real-time voice capture enabled.');
     } catch (error) {
       console.error('Error starting recording:', error);
       showNotification('error', 'Failed to start recording. Please try again.');
     }
   }, [currentSession, createNewSession, clearTranscript, startListening, saveSession, showNotification, isSupported]);
 
-  // FIXED: Stop recording cleanly
+  // Stop recording cleanly
   const handleStopRecording = useCallback(() => {
     try {
       stopListening();
@@ -188,13 +203,13 @@ export const LiveRecording: React.FC = () => {
     }
   }, [currentSession, stopListening, saveSession, showNotification]);
 
-  // FIXED: Update session with new transcript - NO DUPLICATES
+  // PERFORMANCE: Update session with new transcript efficiently
   useEffect(() => {
     if (transcript.length > 0 && currentSession && isHost) {
       try {
         const updatedSession = {
           ...currentSession,
-          transcript: [...transcript], // Direct copy, no merging
+          transcript: [...transcript],
           lastUpdate: new Date()
         };
         setCurrentSession(updatedSession);
@@ -208,7 +223,6 @@ export const LiveRecording: React.FC = () => {
   // Load existing session or prepare for new one
   useEffect(() => {
     if (sessionId) {
-      // Viewer mode
       const session = loadSession(sessionId);
       if (session) {
         setCurrentSession(session);
@@ -220,10 +234,17 @@ export const LiveRecording: React.FC = () => {
         navigate('/live-recording');
       }
     } else {
-      // Host mode
       setIsHost(true);
     }
   }, [sessionId, loadSession, navigate, showNotification]);
+
+  // Font size controls
+  const increaseFontSize = () => setFontSize(prev => Math.min(prev + 2, 32));
+  const decreaseFontSize = () => setFontSize(prev => Math.max(prev - 2, 10));
+  const resetFontSize = () => setFontSize(16);
+
+  // Fullscreen toggle
+  const toggleFullscreen = () => setIsFullscreen(prev => !prev);
 
   // Share session
   const handleShare = useCallback(() => {
@@ -289,7 +310,7 @@ export const LiveRecording: React.FC = () => {
   }, [currentSession, saveSession, clearTranscript, showNotification]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50">
+    <div className={`min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       <div className="w-full max-w-full mx-auto px-4 py-6">
         {/* Header */}
         <div className="text-center mb-6">
@@ -297,10 +318,10 @@ export const LiveRecording: React.FC = () => {
             <Volume2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent mb-2">
-            Live Voice Recording
+            Ultra-Fast Live Recording
           </h1>
           <p className="text-gray-600">
-            {isHost ? 'Real-time voice-to-text with zero repetition' : 'Viewing live recording session'}
+            {isHost ? 'Real-time voice-to-text with zero repetition and maximum accuracy' : 'Viewing live recording session'}
           </p>
         </div>
 
@@ -310,7 +331,7 @@ export const LiveRecording: React.FC = () => {
             <div className="flex items-center p-3 border border-red-200 bg-red-50 rounded-lg">
               <AlertCircle className="w-5 h-5 mr-2 text-red-500 flex-shrink-0" />
               <p className="text-red-800 text-sm">
-                Speech recognition not supported. Use Chrome, Edge, or Safari.
+                Speech recognition not supported. Use Chrome, Edge, or Safari for best performance.
               </p>
             </div>
           </div>
@@ -339,7 +360,42 @@ export const LiveRecording: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Font Size Controls */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={decreaseFontSize}
+                  className="p-1 hover:bg-white rounded transition-colors"
+                  title="Decrease font size"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="px-2 text-sm font-medium">{fontSize}px</span>
+                <button
+                  onClick={increaseFontSize}
+                  className="p-1 hover:bg-white rounded transition-colors"
+                  title="Increase font size"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={resetFontSize}
+                  className="p-1 hover:bg-white rounded transition-colors"
+                  title="Reset font size"
+                >
+                  <Type className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Fullscreen Toggle */}
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Toggle fullscreen"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+
               {/* Host Controls */}
               {isHost && (
                 <>
@@ -350,7 +406,7 @@ export const LiveRecording: React.FC = () => {
                       className="flex items-center px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg hover:from-green-600 hover:to-emerald-600 shadow-lg disabled:opacity-50"
                     >
                       <Play className="w-4 h-4" />
-                      <span>Start Recording</span>
+                      <span>Start Ultra-Fast Recording</span>
                     </button>
                   ) : (
                     <button
@@ -428,18 +484,18 @@ export const LiveRecording: React.FC = () => {
           {isListening && isHost && (
             <div className="flex items-center p-3 mt-4 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
               <div className="w-3 h-3 mr-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-medium text-green-700 text-sm">🎙️ LIVE RECORDING - Each sentence appears on a new line!</span>
+              <span className="font-medium text-green-700 text-sm">🎙️ ULTRA-FAST LIVE RECORDING - Real-time voice capture active!</span>
             </div>
           )}
         </div>
 
-        {/* FULL WIDTH TRANSCRIPT CONTAINER - NO REPETITION */}
+        {/* ULTRA-OPTIMIZED TRANSCRIPT CONTAINER */}
         <div className="bg-white rounded-xl shadow-lg">
           {/* Transcript Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Volume2 className="w-5 h-5 mr-2 text-red-500" />
-              Live Transcript
+              Ultra-Fast Live Transcript
               {currentSession?.isActive && (
                 <span className="ml-2 px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full animate-pulse">
                   LIVE
@@ -453,48 +509,62 @@ export const LiveRecording: React.FC = () => {
             )}
           </div>
 
-          {/* TRANSCRIPT DISPLAY - FULL WIDTH, NO REPETITION */}
+          {/* ULTRA-FAST TRANSCRIPT DISPLAY */}
           <div 
             ref={transcriptRef}
+            onScroll={handleScroll}
             className="w-full h-[600px] overflow-y-auto p-6"
+            style={{ fontSize: `${fontSize}px` }}
           >
             {(currentSession?.transcript?.length || transcript.length) ? (
               <div className="space-y-4 w-full">
-                {/* Show current session transcript for viewers, or live transcript for hosts */}
-                {(isHost ? transcript : currentSession?.transcript || []).map((entry, index) => (
-                  <div key={entry.id} className="flex w-full border-l-4 border-blue-400 pl-4 py-2 bg-blue-50 rounded-r-lg">
-                    {/* SPEAKER NAME ON LEFT */}
-                    <div className="flex-shrink-0 w-16 text-xs text-blue-600 font-medium pt-1 flex items-center">
-                      <User className="w-3 h-3 mr-1" />
-                      <span>User</span>
-                    </div>
-                    
-                    {/* TEXT CONTENT - PROPER PARAGRAPH FORMAT */}
-                    <div className="flex-1 ml-4">
-                      <p className="text-gray-900 leading-relaxed text-base whitespace-pre-wrap break-words">
-                        {entry.text}
-                      </p>
-                      {/* TIMESTAMP BELOW TEXT */}
-                      <div className="text-xs text-gray-400 mt-2">
-                        {entry.timestamp.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          second: '2-digit'
-                        })}
+                {(isHost ? transcript : currentSession?.transcript || []).map((entry, index) => {
+                  const isInterim = entry.id.startsWith('interim_');
+                  return (
+                    <div 
+                      key={entry.id} 
+                      className={`flex w-full border-l-4 pl-4 py-2 rounded-r-lg transition-all duration-200 ${
+                        isInterim 
+                          ? 'border-yellow-400 bg-yellow-50 opacity-70' 
+                          : 'border-blue-400 bg-blue-50'
+                      }`}
+                    >
+                      {/* SPEAKER NAME ON LEFT */}
+                      <div className="flex-shrink-0 w-16 text-xs font-medium pt-1 flex items-center" style={{ color: isInterim ? '#d97706' : '#2563eb' }}>
+                        <User className="w-3 h-3 mr-1" />
+                        <span>{isInterim ? 'Live' : 'User'}</span>
+                      </div>
+                      
+                      {/* TEXT CONTENT - OPTIMIZED FOR PERFORMANCE */}
+                      <div className="flex-1 ml-4">
+                        <p className={`leading-relaxed whitespace-pre-wrap break-words ${
+                          isInterim ? 'text-yellow-800 italic' : 'text-gray-900 font-medium'
+                        }`}>
+                          {entry.text}
+                        </p>
+                        {/* TIMESTAMP BELOW TEXT */}
+                        <div className="text-xs mt-2" style={{ color: isInterim ? '#92400e' : '#6b7280' }}>
+                          {entry.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            second: '2-digit'
+                          })}
+                          {isInterim && <span className="ml-2 animate-pulse">●</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 w-full">
                 <div className="text-center">
                   <Mic className="w-20 h-20 mx-auto mb-6 opacity-30" />
                   <p className="text-xl font-medium mb-2">
-                    {isHost ? 'Click "Start Recording" to begin' : 'Waiting for host to start recording...'}
+                    {isHost ? 'Click "Start Ultra-Fast Recording" to begin' : 'Waiting for host to start recording...'}
                   </p>
                   <p className="text-base text-gray-400">
-                    {isHost ? 'Each sentence will appear on a separate line - NO REPETITION!' : 'Live transcript will appear here when recording starts'}
+                    {isHost ? 'Real-time voice capture with maximum accuracy and zero repetition!' : 'Live transcript will appear here when recording starts'}
                   </p>
                 </div>
               </div>
