@@ -30,6 +30,8 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
   const lastFinalTextRef = useRef<string>('');
   const currentSessionRef = useRef<string>('');
   const isProcessingRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   // Check browser support
   useEffect(() => {
@@ -40,7 +42,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     }
   }, []);
 
-  // COMPLETELY REWRITTEN: Zero repetition, perfect line separation
+  // FIXED: Zero repetition, perfect line separation with network error handling
   const processResults = useCallback((event: any) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
@@ -100,6 +102,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     }
   }, []);
 
+  // ENHANCED: Auto-retry mechanism for network errors
   const startListening = useCallback(() => {
     if (!isSupported) {
       setError('Speech recognition not supported in this browser.');
@@ -137,6 +140,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         console.log('🎤 LIVE RECORDING STARTED - ZERO REPETITION MODE');
         setIsListening(true);
         setError(null);
+        retryCountRef.current = 0; // Reset retry count on successful start
       };
 
       recognition.onresult = processResults;
@@ -150,26 +154,43 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
           return;
         }
 
+        // ENHANCED: Handle network errors with retry mechanism
+        if (event.error === 'network') {
+          console.log(`Network error occurred. Retry attempt: ${retryCountRef.current + 1}/${maxRetries}`);
+          
+          if (retryCountRef.current < maxRetries && !isManualStopRef.current) {
+            retryCountRef.current++;
+            setError(`Network error. Retrying... (${retryCountRef.current}/${maxRetries})`);
+            
+            // Wait 2 seconds before retrying
+            setTimeout(() => {
+              if (!isManualStopRef.current) {
+                console.log('🔄 Retrying after network error...');
+                startListening();
+              }
+            }, 2000);
+            return;
+          } else {
+            setError('Network error: Please check your internet connection and try again.');
+            setIsListening(false);
+            return;
+          }
+        }
+
         // Continue on no-speech (don't stop)
         if (event.error === 'no-speech') {
           console.log('No speech detected, continuing...');
           return;
         }
 
-        // Handle network errors
-        if (event.error === 'network') {
-          setError('Network error. Please check connection and restart recording.');
-          setIsListening(false);
-          return;
-        }
-
         // Handle other errors
         const errorMessages: { [key: string]: string } = {
-          'not-allowed': 'Microphone access denied. Please allow microphone permissions.',
-          'audio-capture': 'Microphone error. Please check your microphone.',
+          'not-allowed': 'Microphone access denied. Please allow microphone permissions and refresh the page.',
+          'audio-capture': 'Microphone error. Please check your microphone and try again.',
+          'service-not-allowed': 'Speech service not allowed. Please check your browser settings.',
         };
 
-        setError(errorMessages[event.error] || `Speech error: ${event.error}`);
+        setError(errorMessages[event.error] || `Speech error: ${event.error}. Please try again.`);
         setIsListening(false);
       };
 
@@ -177,14 +198,14 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
         console.log('Speech recognition ended');
         setIsListening(false);
         
-        // FIXED: Auto-restart for continuous recording ONLY if not manually stopped
-        if (!isManualStopRef.current) {
+        // FIXED: Auto-restart for continuous recording ONLY if not manually stopped and no errors
+        if (!isManualStopRef.current && retryCountRef.current === 0) {
           console.log('🔄 Auto-restarting for continuous recording...');
           setTimeout(() => {
             if (!isManualStopRef.current) {
               startListening();
             }
-          }, 500); // Short delay for stability
+          }, 1000); // Longer delay for stability
         }
       };
 
@@ -193,7 +214,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
       
     } catch (error) {
       console.error('Failed to start speech recognition:', error);
-      setError('Failed to start speech recognition. Please try again.');
+      setError('Failed to start speech recognition. Please refresh the page and try again.');
       setIsListening(false);
     }
   }, [isSupported, processResults]);
@@ -202,6 +223,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     console.log('🛑 MANUALLY STOPPING LIVE RECORDING');
     isManualStopRef.current = true;
     isProcessingRef.current = false;
+    retryCountRef.current = 0; // Reset retry count
 
     if (recognitionRef.current) {
       try {
@@ -222,6 +244,7 @@ export const useLiveRecordingSpeech = (): UseLiveRecordingSpeechReturn => {
     lastFinalTextRef.current = '';
     currentSessionRef.current = '';
     isProcessingRef.current = false;
+    retryCountRef.current = 0;
     console.log('✅ TRANSCRIPT COMPLETELY CLEARED');
   }, []);
 
