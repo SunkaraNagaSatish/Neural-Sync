@@ -189,7 +189,6 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
       }
     }
   }, [transcript, allTranscript]);
-  }, [transcript, allTranscript]);
 
   // Save AI responses to session storage
   useEffect(() => {
