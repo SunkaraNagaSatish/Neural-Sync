@@ -13,7 +13,8 @@ import {
   Phone,
   BarChart3,
   FileText,
-  Play
+  Play,
+  Volume2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
@@ -52,6 +53,7 @@ export const Header: React.FC = React.memo(() => {
     { path: '/', label: 'Home', icon: Home },
     { path: '/ai-interview-preview', label: 'AI Interview Practice', icon: MessageSquare },
     { path: '/ai-assistant-preview', label: 'AI Interview Assistant', icon: Zap },
+    { path: '/live-recording', label: 'Live Recording', icon: Volume2 },
     { path: '/demo', label: 'Demo', icon: Play },
     { path: '/contact', label: 'Contact Us', icon: Phone },
   ], []);
@@ -59,6 +61,7 @@ export const Header: React.FC = React.memo(() => {
   const authenticatedNavItems: NavItem[] = useMemo(() => [
     { path: '/setup', label: 'Neural Sync Meeting', icon: Brain },
     { path: '/ai-practice', label: 'AI Interview Practice', icon: MessageSquare },
+    { path: '/live-recording', label: 'Live Recording', icon: Volume2 },
     { path: '/summary', label: 'Interview Summary', icon: BarChart3, premiumOnly: true },
   ], []);
 

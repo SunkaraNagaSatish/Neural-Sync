@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain, Target } from 'lucide-react';
+import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain, Target } from 'lucide-react';
 import { parsePDF, validatePDFFile, extractTextFromPDFAlternative, testPDFJSAvailability } from '../services/pdfParser';
 import { MeetingContext } from '../types';
 import { usePremium } from '../contexts/PremiumContext';
@@ -213,6 +214,11 @@ export const SetupScreen: React.FC = () => {
     } else if (formData.keySkills.trim().length < 10) {
       newErrors.keySkills = 'Please provide more detailed key skills (at least 10 characters)';
     }
+    if (!formData.keySkills.trim()) {
+      newErrors.keySkills = 'Please enter your key skills for better AI responses';
+    } else if (formData.keySkills.trim().length < 10) {
+      newErrors.keySkills = 'Please provide more detailed key skills (at least 10 characters)';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -228,11 +234,14 @@ export const SetupScreen: React.FC = () => {
     try {
       if (validateForm()) {
         // Create the meeting context with key skills
+        // Create the meeting context with key skills
         const meetingContext: MeetingContext = {
           jobTitle: formData.jobTitle.trim(),
           companyName: formData.companyName.trim(),
           jobDescription: formData.jobDescription.trim(),
           meetingType: formData.meetingType,
+          resumeText: formData.resumeText.trim(),
+          keySkills: formData.keySkills.trim() // NEW: Include key skills
           resumeText: formData.resumeText.trim(),
           keySkills: formData.keySkills.trim() // NEW: Include key skills
         };

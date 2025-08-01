@@ -47,6 +47,9 @@ const AIAssistantPreview = lazy(() =>
 const InterviewSummary = lazy(() => 
   import('./components/InterviewSummary').then(module => ({ default: module.InterviewSummary }))
 );
+const LiveRecording = lazy(() => 
+  import('./components/LiveRecording').then(module => ({ default: module.LiveRecording }))
+);
 
 // Preload critical components
 const preloadComponents = () => {
@@ -108,6 +111,10 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/ai-interview-preview" element={<AIInterviewPreview />} />
             <Route path="/ai-assistant-preview" element={<AIAssistantPreview />} />
             <Route path="/demo" element={<DemoMeeting />} />
+            
+            {/* Live Recording Routes - Public Access */}
+            <Route path="/live-recording" element={<LiveRecording />} />
+            <Route path="/live-recording/:sessionId" element={<LiveRecording />} />
             
             {/* Auth Routes (redirect if already authenticated) */}
             <Route path="/login" element={
