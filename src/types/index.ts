@@ -4,6 +4,7 @@ export interface MeetingContext {
   jobDescription: string;
   meetingType: string;
   resumeText: string;
+  keySkills: string;
 }
 
 export interface TranscriptEntry {
@@ -13,11 +14,13 @@ export interface TranscriptEntry {
   confidence?: number;
 }
 
+// For code responses, explanation is required
 export interface AIResponse {
   id: string;
   query: string;
   response: string;
   timestamp: Date;
+  explanation?: string; // Only for code responses
 }
 
 export interface MeetingSession {

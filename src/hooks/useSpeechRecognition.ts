@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { TranscriptEntry } from '../types';
 
-interface UseSpeechRecognitionReturn {
+interface UseMeetingSpeechRecognitionReturn {
   isListening: boolean;
   transcript: TranscriptEntry[];
   startListening: () => void;
@@ -10,13 +10,11 @@ interface UseSpeechRecognitionReturn {
   error: string | null;
 }
 
-// Use 'any' for recognitionRef INSIDE the hook, not at the top level
-
-export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
+export const useMeetingSpeechRecognition = (): UseMeetingSpeechRecognitionReturn => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null); // <-- move here
+  const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastResultRef = useRef<string>('');
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -88,7 +86,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
               confidence: bestConfidence
             };
             
-            console.log('Neural Sync captured:', finalText);
+            console.log('Meeting captured:', finalText);
             isProcessingRef.current = false;
             return [...prev, newEntry];
           });
@@ -118,46 +116,26 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       recognitionRef.current = null;
     }
 
-    // Stop any existing recognition first
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.warn('Error stopping existing recognition:', err);
-      }
-      recognitionRef.current = null;
-    }
-
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       
-      // Optimized settings for better accuracy and performance
-      recognition.continuous = true; // Keep listening for multiple phrases
+      // Optimized settings for meeting capture
+      recognition.continuous = true;
       recognition.interimResults = false; // Only final results for stability
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
-      
-      // Enhanced settings for better performance
-      if ('webkitSpeechRecognition' in window) {
-        (recognition as any).webkitServiceURI = 'wss://www.google.com/speech-api/full-duplex/v1/up';
-      }
       
       recognition.onstart = () => {
         setIsListening(true);
         setError(null);
         lastResultRef.current = '';
         isProcessingRef.current = false;
-        console.log('Neural Sync speech recognition started');
+        console.log('Meeting speech recognition started');
         
-        // Set a timeout to auto-stop after 15 seconds for better UX
+        // Set a timeout to auto-stop after 15 seconds
         timeoutRef.current = setTimeout(() => {
           if (recognitionRef.current) {
-            try {
-              recognitionRef.current.stop();
-            } catch (err) {
-              console.warn('Error stopping recognition on timeout:', err);
-            }
             try {
               recognitionRef.current.stop();
             } catch (err) {
@@ -172,9 +150,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('Meeting speech recognition error:', event.error);
         
-        // Don't show error for aborted (user stopped)
         if (event.error === 'aborted') {
           setIsListening(false);
           isProcessingRef.current = false;
@@ -187,20 +164,17 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         setIsListening(false);
         isProcessingRef.current = false;
         
-        isProcessingRef.current = false;
-        
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
       };
-
 
       recognition.onend = () => {
         setIsListening(false);
         isProcessingRef.current = false;
         recognitionRef.current = null;
-        console.log('Neural Sync speech recognition ended');
+        console.log('Meeting speech recognition ended');
         
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -208,13 +182,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         }
       };
 
-
       recognitionRef.current = recognition;
       recognition.start();
       
-      
     } catch (err) {
-      console.error('Failed to start speech recognition:', err);
+      console.error('Failed to start meeting speech recognition:', err);
       setError('Failed to start speech recognition. Please try again.');
       setIsListening(false);
       isProcessingRef.current = false;
@@ -228,35 +200,29 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       } catch (err) {
         console.warn('Error stopping recognition:', err);
       }
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.warn('Error stopping recognition:', err);
-      }
       recognitionRef.current = null;
     }
-    
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
       debounceTimer.current = null;
     }
     
-    
     setIsListening(false);
     isProcessingRef.current = false;
-    console.log('Neural Sync speech recognition stopped');
+    console.log('Meeting speech recognition stopped');
   }, []);
 
   const clearTranscript = useCallback(() => {
     setTranscript([]);
     lastResultRef.current = '';
     isProcessingRef.current = false;
-    console.log('Neural Sync transcript cleared');
+    console.log('Meeting transcript cleared');
   }, []);
 
   return {
@@ -268,10 +234,3 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     error
   };
 };
-
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}

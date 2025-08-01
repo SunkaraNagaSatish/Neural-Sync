@@ -40,30 +40,30 @@ export const UserProfile: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-4xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
             User Profile
           </h1>
           <p className="text-gray-600">Manage your account and track your progress</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid gap-8 lg:grid-cols-3">
           {/* Left Column - Profile Info */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="space-y-6 lg:col-span-1">
             {/* Profile Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <img
                     src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
                     alt={user?.name}
-                    className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
+                    className="w-24 h-24 border-4 border-white rounded-full shadow-lg"
                   />
                   {isPremium && (
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <div className="absolute flex items-center justify-center w-8 h-8 rounded-full -top-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-500">
                       <Crown className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -76,19 +76,19 @@ export const UserProfile: React.FC = () => {
                         type="text"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors text-center"
+                        className="w-full px-3 py-2 text-center transition-colors border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                       />
                       <div className="flex justify-center space-x-2">
                         <button
                           onClick={handleSave}
-                          className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-1"
+                          className="flex items-center px-3 py-1 space-x-1 text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600"
                         >
                           <Save className="w-3 h-3" />
                           <span>Save</span>
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
-                          className="px-3 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-1"
+                          className="flex items-center px-3 py-1 space-x-1 text-white transition-colors bg-gray-500 rounded-lg hover:bg-gray-600"
                         >
                           <X className="w-3 h-3" />
                           <span>Cancel</span>
@@ -97,11 +97,11 @@ export const UserProfile: React.FC = () => {
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-center justify-center space-x-2 mb-2">
+                      <div className="flex items-center justify-center mb-2 space-x-2">
                         <h2 className="text-xl font-bold text-gray-900">{user?.name}</h2>
                         <button
                           onClick={() => setIsEditing(true)}
-                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="p-1 text-gray-400 transition-colors hover:text-gray-600"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
@@ -115,12 +115,12 @@ export const UserProfile: React.FC = () => {
                 </div>
 
                 {isPremium ? (
-                  <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 rounded-full text-sm font-medium">
+                  <div className="inline-flex items-center px-4 py-2 space-x-2 text-sm font-medium rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700">
                     <Crown className="w-4 h-4" />
                     <span>Premium Member</span>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm">
+                  <div className="inline-flex items-center px-4 py-2 space-x-2 text-sm text-gray-600 bg-gray-100 rounded-full">
                     <User className="w-4 h-4" />
                     <span>Free Plan</span>
                   </div>
@@ -129,23 +129,23 @@ export const UserProfile: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
                 <Settings className="w-5 h-5 mr-2" />
                 Quick Actions
               </h3>
               <div className="space-y-3">
-                <button className="w-full px-4 py-3 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-left">
+                <button className="w-full px-4 py-3 text-left text-indigo-700 transition-colors rounded-lg bg-indigo-50 hover:bg-indigo-100">
                   Update Profile Picture
                 </button>
-                <button className="w-full px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-left">
+                <button className="w-full px-4 py-3 text-left text-purple-700 transition-colors rounded-lg bg-purple-50 hover:bg-purple-100">
                   Change Password
                 </button>
-                <button className="w-full px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-left">
+                <button className="w-full px-4 py-3 text-left text-green-700 transition-colors rounded-lg bg-green-50 hover:bg-green-100">
                   Export Data
                 </button>
                 {!isPremium && (
-                  <button className="w-full px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 font-medium">
+                  <button className="w-full px-4 py-3 font-medium text-white transition-all duration-200 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
                     Upgrade to Premium
                   </button>
                 )}
@@ -154,16 +154,16 @@ export const UserProfile: React.FC = () => {
           </div>
 
           {/* Right Column - Stats & Activity */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* Stats Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
               {stats.map((stat, index) => {
                 const Icon = stat.icon;
                 return (
-                  <div key={index} className="bg-white rounded-2xl shadow-lg p-6">
+                  <div key={index} className="p-6 bg-white shadow-lg rounded-2xl">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                        <p className="mb-1 text-sm text-gray-600">{stat.label}</p>
                         <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
                       </div>
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center`}>
@@ -176,8 +176,8 @@ export const UserProfile: React.FC = () => {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <h3 className="flex items-center mb-6 text-lg font-semibold text-gray-900">
                 <BarChart3 className="w-5 h-5 mr-2" />
                 Recent Activity
               </h3>
@@ -190,12 +190,12 @@ export const UserProfile: React.FC = () => {
                     </div>
                     <div className="text-right">
                       {activity.score && (
-                        <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                        <span className="inline-flex items-center px-2 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full">
                           {activity.score}
                         </span>
                       )}
                       {activity.duration && (
-                        <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        <span className="inline-flex items-center px-2 py-1 text-sm font-medium text-blue-800 bg-blue-100 rounded-full">
                           {activity.duration}
                         </span>
                       )}
@@ -206,32 +206,32 @@ export const UserProfile: React.FC = () => {
             </div>
 
             {/* Achievement Badges */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <h3 className="flex items-center mb-6 text-lg font-semibold text-gray-900">
                 <Award className="w-5 h-5 mr-2" />
                 Achievements
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border border-yellow-200">
-                  <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-2">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div className="p-4 text-center border border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-yellow-400 rounded-full">
                     <Award className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-xs font-medium text-yellow-800">First Interview</p>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                  <div className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="p-4 text-center border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-blue-400 rounded-full">
                     <BarChart3 className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-xs font-medium text-blue-800">10 Sessions</p>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                  <div className="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="p-4 text-center border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-green-400 rounded-full">
                     <Crown className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-xs font-medium text-green-800">High Scorer</p>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border border-purple-200">
-                  <div className="w-12 h-12 bg-purple-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="p-4 text-center border border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-purple-400 rounded-full">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-xs font-medium text-purple-800">Consistent</p>

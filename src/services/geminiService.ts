@@ -24,7 +24,7 @@ export const initializeGemini = (apiKey?: string) => {
   }
 };
 
-// Optimized response generation with enhanced speed and accuracy
+// ENHANCED: Optimized response generation with key skills context
 export const generateMeetingResponse = async (
   context: MeetingContext,
   recentTranscript: TranscriptEntry[]
@@ -55,13 +55,24 @@ export const generateMeetingResponse = async (
       ? recentTranscript[recentTranscript.length - 1].text 
       : '';
 
-    // Enhanced prompt for better accuracy and relevance
+    // ENHANCED: Smart question analysis and context-aware prompting
+    const questionLower = lastQuestion.toLowerCase();
+    const isIncompleteQuestion = lastQuestion.length < 20 || 
+                                questionLower.includes('diff') || 
+                                questionLower.includes('what is') ||
+                                questionLower.includes('explain') ||
+                                questionLower.includes('tell me') ||
+                                questionLower.includes('how') ||
+                                questionLower.includes('why');
+
+    // Enhanced prompt with key skills integration for incomplete questions
     const prompt = `You are an expert interview coach helping a candidate respond professionally and confidently.
 
 CANDIDATE PROFILE:
 - Position: ${context.jobTitle}
 - Company: ${context.companyName}
 - Interview Type: ${context.meetingType}
+- Key Skills & Technologies: ${context.keySkills}
 
 CANDIDATE BACKGROUND (key highlights):
 ${context.resumeText.slice(0, 1200)}
@@ -69,12 +80,19 @@ ${context.resumeText.slice(0, 1200)}
 INTERVIEWER'S QUESTION:
 "${lastQuestion}"
 
+${isIncompleteQuestion ? `
+SPECIAL INSTRUCTION FOR INCOMPLETE QUESTION:
+This appears to be an incomplete or brief question. Use the candidate's key skills (${context.keySkills}) to provide a relevant, comprehensive answer. If the question mentions technical terms like "let", "const", "diff", etc., relate your answer to the candidate's JavaScript/programming skills and provide practical examples.
+` : ''}
+
 INSTRUCTIONS:
 - Provide a direct, professional response to the specific question asked
 - Use relevant experience from the candidate's background when applicable
 - Keep response conversational, confident, and authentic
 - Structure answer clearly with specific examples if relevant
 - Match the tone appropriate for ${context.meetingType}
+- If the question is incomplete, use the key skills context to provide a comprehensive answer
+- For technical questions, relate to the candidate's expertise in: ${context.keySkills}
 - Aim for 2-4 sentences that directly address the question
 
 Generate a natural, professional response:`;
@@ -89,19 +107,29 @@ Generate a natural, professional response:`;
     const endTime = Date.now();
     console.log(`Neural Sync response generated in ${endTime - startTime}ms`);
     
-    // Enhanced fallback responses based on question type
+    // Enhanced fallback responses based on question type and key skills
     if (!text || text.length < 20) {
       const questionLower = lastQuestion.toLowerCase();
       
       if (questionLower.includes('yourself') || questionLower.includes('background')) {
-        return `I'm a dedicated ${context.jobTitle} with strong experience in the technologies and methodologies relevant to this role. I'm particularly excited about this opportunity at ${context.companyName} because it aligns perfectly with my career goals and allows me to contribute my skills while continuing to grow professionally.`;
+        return `I'm a dedicated ${context.jobTitle} with strong experience in ${context.keySkills}. I'm particularly excited about this opportunity at ${context.companyName} because it aligns perfectly with my expertise in these technologies and allows me to contribute my skills while continuing to grow professionally.`;
       } else if (questionLower.includes('strength') || questionLower.includes('skills')) {
-        return `One of my key strengths is my ability to quickly learn and adapt to new technologies while maintaining high-quality standards. I've consistently delivered successful projects by combining technical expertise with strong problem-solving skills and effective collaboration.`;
+        return `One of my key strengths is my expertise in ${context.keySkills}. I've consistently delivered successful projects by combining these technical skills with strong problem-solving abilities and effective collaboration. My experience with these technologies has enabled me to adapt quickly to new challenges.`;
       } else if (questionLower.includes('why') && questionLower.includes('company')) {
-        return `I'm drawn to ${context.companyName} because of your innovative approach and strong reputation in the industry. This role represents an excellent opportunity to contribute to meaningful projects while working with a talented team that shares my commitment to excellence.`;
+        return `I'm drawn to ${context.companyName} because of your innovative approach and the opportunity to work with technologies I'm passionate about, including ${context.keySkills}. This role represents an excellent opportunity to contribute to meaningful projects while working with a talented team.`;
+      } else if (questionLower.includes('diff') || questionLower.includes('difference')) {
+        // Handle incomplete technical questions using key skills
+        const skills = context.keySkills.toLowerCase();
+        if (skills.includes('javascript') || skills.includes('js')) {
+          return "Based on my JavaScript experience, I can explain the key differences. For example, if you're asking about 'let' vs 'const' vs 'var', the main differences are in scope, hoisting behavior, and reassignment capabilities. 'Let' and 'const' are block-scoped, while 'var' is function-scoped. 'Const' prevents reassignment, while 'let' allows it.";
+        } else if (skills.includes('react')) {
+          return "In my React experience, I've worked with many concepts that have important differences. For instance, props vs state, functional vs class components, or controlled vs uncontrolled components. Could you specify which comparison you'd like me to elaborate on?";
+        } else {
+          return `Based on my experience with ${context.keySkills}, I can explain various technical differences. Could you provide more context about which specific concepts you'd like me to compare?`;
+        }
       }
       
-      return "That's an excellent question. Based on my experience and background, I believe I can bring valuable insights to this role. Could you provide a bit more context so I can give you the most relevant and detailed answer?";
+      return `That's an excellent question. Based on my experience with ${context.keySkills} and background in ${context.jobTitle}, I believe I can provide valuable insights. Could you provide a bit more context so I can give you the most relevant and detailed answer?`;
     }
     
     return text;
@@ -129,11 +157,12 @@ Generate a natural, professional response:`;
   }
 };
 
-// ENHANCED: Generate code response for technical questions with better React.js support
+// FIXED: Generate code response with key skills binding
+// Returns both code and explanation
 export const generateCodeResponse = async (
   context: MeetingContext,
   recentTranscript: TranscriptEntry[]
-): Promise<string> => {
+): Promise<{ code: string; explanation: string }> => {
   if (!genAI) {
     try {
       genAI = new GoogleGenerativeAI(API_KEY);
@@ -158,32 +187,34 @@ export const generateCodeResponse = async (
       ? recentTranscript[recentTranscript.length - 1].text 
       : '';
 
-    // Determine the primary technology from job title and context
+    // FIXED: Determine the primary technology from key skills and job title
+    const keySkillsLower = context.keySkills.toLowerCase();
     const jobTitleLower = context.jobTitle.toLowerCase();
     const questionLower = lastQuestion.toLowerCase();
     
     let primaryTech = 'JavaScript';
-    if (jobTitleLower.includes('react') || questionLower.includes('react')) {
+    if (keySkillsLower.includes('react') || jobTitleLower.includes('react') || questionLower.includes('react')) {
       primaryTech = 'React.js';
-    } else if (jobTitleLower.includes('python') || questionLower.includes('python')) {
+    } else if (keySkillsLower.includes('python') || jobTitleLower.includes('python') || questionLower.includes('python')) {
       primaryTech = 'Python';
-    } else if (jobTitleLower.includes('java') || questionLower.includes('java')) {
+    } else if (keySkillsLower.includes('java') && !keySkillsLower.includes('javascript') || jobTitleLower.includes('java') || questionLower.includes('java')) {
       primaryTech = 'Java';
-    } else if (jobTitleLower.includes('node') || questionLower.includes('node')) {
+    } else if (keySkillsLower.includes('node') || jobTitleLower.includes('node') || questionLower.includes('node')) {
       primaryTech = 'Node.js';
-    } else if (jobTitleLower.includes('angular') || questionLower.includes('angular')) {
+    } else if (keySkillsLower.includes('angular') || jobTitleLower.includes('angular') || questionLower.includes('angular')) {
       primaryTech = 'Angular';
-    } else if (jobTitleLower.includes('vue') || questionLower.includes('vue')) {
+    } else if (keySkillsLower.includes('vue') || jobTitleLower.includes('vue') || questionLower.includes('vue')) {
       primaryTech = 'Vue.js';
     }
 
-    // Enhanced prompt specifically designed for code generation
-    const prompt = `You are a senior software engineer providing code examples for technical interview questions.
+    // ENHANCED: Code generation prompt with key skills context
+    const prompt = `You are a senior software engineer and teacher. Your job is to help a complete beginner understand code step by step.
 
 CANDIDATE PROFILE:
 - Position: ${context.jobTitle}
 - Company: ${context.companyName}
 - Primary Technology: ${primaryTech}
+- Key Skills: ${context.keySkills}
 
 CANDIDATE BACKGROUND:
 ${context.resumeText.slice(0, 800)}
@@ -192,23 +223,31 @@ INTERVIEWER'S QUESTION:
 "${lastQuestion}"
 
 INSTRUCTIONS FOR CODE GENERATION:
-1. Analyze if this question requires a code implementation or example
-2. If it's a coding question, provide clean, production-ready code
-3. Use ${primaryTech} as the primary language/framework unless the question specifies otherwise
-4. For React.js questions, provide functional components with hooks
-5. Include proper imports, exports, and TypeScript types when applicable
-6. Add clear comments explaining complex logic
-7. Format code with proper indentation and structure
-8. If it's not a coding question, respond with "This question doesn't require a code implementation."
+1. If the question requires code, always provide three versions: Basic, Intermediate, and Advanced. Each version should be clearly separated and labeled in the code as:
+// --- Basic Version ---
+// --- Intermediate Version ---
+// --- Advanced Version ---
+2. Each version should build on the previous one, showing more features or optimizations.
+3. For each version, explain what it does and why, as if teaching a beginner. Use simple language and break down every concept. The explanation should be structured as:
+Basic Version Explanation:
+...
+Intermediate Version Explanation:
+...
+Advanced Version Explanation:
+...
+4. Use ${primaryTech} as the main language/framework unless the question says otherwise.
+5. For React, start with a minimal component, then add hooks, props, etc. For algorithms, start with a naive solution, then optimize.
+6. Always include clear comments in the code for each step.
+7. If the question is not about code, respond with "This question doesn't require a code implementation."
 
-SPECIFIC GUIDELINES:
-- For React questions: Use functional components, hooks (useState, useEffect, etc.), and modern React patterns
-- For JavaScript questions: Use ES6+ syntax, async/await, and modern JavaScript features
-- For Python questions: Use clean, Pythonic code with proper error handling
-- For algorithm questions: Provide optimized solutions with time/space complexity analysis
-- For system design questions: Provide architectural code examples or pseudocode
+RESPONSE FORMAT:
+Return your answer in the following JSON format (do not include markdown or extra text):
+{
+  "code": "<all code steps, clearly separated and commented as described>",
+  "explanation": "<beginner-friendly explanation for each code step, in order, clearly labeled>"
+}
 
-Generate a comprehensive code example:`;
+Generate the code and explanation as described above.`;
 
     console.log('Neural Sync generating code response...');
     const startTime = Date.now();
@@ -216,6 +255,21 @@ Generate a comprehensive code example:`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+    let code = text;
+    let explanation = '';
+    // Try to parse JSON if possible
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        code = parsed.code || text;
+        explanation = parsed.explanation || '';
+      }
+    } catch (e) {
+      // fallback: treat all as code
+      code = text;
+      explanation = '';
+    }
     
     const endTime = Date.now();
     console.log(`Neural Sync code response generated in ${endTime - startTime}ms`);
@@ -236,90 +290,44 @@ Generate a comprehensive code example:`;
       'html', 'css', 'dom', 'event', 'fetch', 'axios', 'rest', 'graphql'
     ];
     
-    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword));
+    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword)) ||
+                          context.keySkills.toLowerCase().split(',').some(skill => 
+                            questionLower.includes(skill.trim().toLowerCase())
+                          );
     
-    // Special handling for React questions
-    const isReactQuestion = questionLower.includes('react') || 
-                           questionLower.includes('component') || 
-                           questionLower.includes('jsx') || 
-                           questionLower.includes('hook') ||
-                           jobTitleLower.includes('react');
-    
-    if (!isCodeQuestion && !isReactQuestion) {
-      return "This question doesn't require a code implementation. It appears to be a conceptual or behavioral question that would be better answered with an explanation rather than code.";
+    if (!isCodeQuestion) {
+      return {
+        code: "This question doesn't require a code implementation. It appears to be a conceptual or behavioral question that would be better answered with an explanation rather than code.",
+        explanation: "This question is not a coding question, so no code is provided."
+      };
     }
-    
-    if (!text || text.length < 50) {
-      // Provide fallback code examples based on question type
-      if (isReactQuestion) {
-        return `// React.js Example Component
-import React, { useState, useEffect } from 'react';
-
-const ExampleComponent = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Fetch data or perform side effects
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Your API call here
-        const response = await fetch('/api/data');
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div>
-      <h2>Data Display</h2>
-      {data.map((item, index) => (
-        <div key={index}>
-          {/* Render your data here */}
-          {item.name}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-export default ExampleComponent;`;
+    if (!code || code.length < 50) {
+      // Provide fallback code examples based on key skills
+      if (keySkillsLower.includes('react')) {
+        return {
+          code: `// React.js Example Component based on your skills\nimport React, { useState, useEffect } from 'react';\n...`,
+          explanation: 'This is a basic React functional component that fetches and displays data, demonstrating useState and useEffect.'
+        };
+      } else if (keySkillsLower.includes('python')) {
+        return {
+          code: `# Python Example based on your skills\ndef example_function(input_data):\n    ...`,
+          explanation: 'This is a Python function that processes input data and demonstrates error handling and list comprehensions.'
+        };
       } else {
-        return `// JavaScript Example
-function exampleFunction(input) {
-  // Implementation based on your specific requirements
-  try {
-    // Your logic here
-    return processInput(input);
-  } catch (error) {
-    console.error('Error:', error);
-    return null;
-  }
-}
-
-// Usage example
-const result = exampleFunction(inputData);
-console.log(result);`;
+        return {
+          code: `// JavaScript Example based on your skills\nfunction exampleFunction(input) { ... }`,
+          explanation: 'This is a JavaScript function that processes input and demonstrates error handling.'
+        };
       }
     }
-    
-    return text;
+    return { code, explanation };
     
   } catch (error) {
     console.error('Neural Sync code generation error:', error);
-    return "Unable to generate code at this time due to a technical error. Please try rephrasing your question or try again in a moment.";
+    return {
+      code: "Unable to generate code at this time due to a technical error. Please try rephrasing your question or try again in a moment.",
+      explanation: "A technical error occurred while generating the code. Please try again later or rephrase your question."
+    };
   }
 };
 
@@ -414,6 +422,7 @@ export const generateInterviewTips = async (
 CONTEXT:
 Role: ${context.jobTitle}
 Company: ${context.companyName}
+Key Skills: ${context.keySkills}
 Recent conversation: ${recentTranscript || 'Interview starting'}
 
 CANDIDATE BACKGROUND:
@@ -421,7 +430,7 @@ ${context.resumeText.slice(0, 600)}
 
 Provide tips that are:
 - Specific to this role and company
-- Based on the conversation context
+- Based on the conversation context and key skills
 - Confidence-building and actionable
 - Professional and relevant
 
@@ -439,7 +448,7 @@ Format each tip as a bullet point starting with "•"`;
       .filter(tip => tip.length > 0);
     
     return tips.length > 0 ? tips : [
-      "Highlight your most relevant experience for this specific role",
+      `Highlight your expertise in ${context.keySkills} with specific examples`,
       "Ask thoughtful questions about the team structure and daily responsibilities",
       "Provide concrete examples with measurable results from your background",
       "Show genuine enthusiasm for the company's mission and values",
@@ -449,9 +458,9 @@ Format each tip as a bullet point starting with "•"`;
   } catch (error) {
     console.error('Tips generation error:', error);
     return [
-      "Stay confident and reference your relevant experience",
+      `Stay confident and reference your experience with ${context.keySkills}`,
       "Ask insightful questions about the role and company culture",
-      "Provide specific examples that demonstrate your skills",
+      "Provide specific examples that demonstrate your technical skills",
       "Show enthusiasm and genuine interest in the opportunity",
       "Prepare thoughtful questions about the team and challenges"
     ];

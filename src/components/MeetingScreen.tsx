@@ -1,3 +1,17 @@
+// Helper function to strip triple backticks and language specifiers from code blocks
+function stripCodeBlock(code: string): string {
+  if (!code) return '';
+  // Remove leading/trailing triple backticks and optional language
+  let cleaned = code
+    .replace(/^```[a-zA-Z]*\n?/, '')
+    .replace(/```$/, '')
+    .trim();
+  // Replace escaped newlines with real newlines
+  cleaned = cleaned.replace(/\\n/g, '\n').replace(/\\r\\n/g, '\n');
+  // Replace literal "\n" (from JSON) with real newlines
+  cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\n/g, '\n');
+  return cleaned;
+}
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -17,7 +31,7 @@ import {
   Crown,
   Code
 } from 'lucide-react';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useMeetingSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { MeetingContext, AIResponse, TranscriptEntry } from '../types';
 import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { usePremium } from '../contexts/PremiumContext';
@@ -35,18 +49,38 @@ const SESSION_STORAGE_KEYS = {
   START_TIME: 'neural_sync_start_time'
 };
 
+// Storage keys for premium persistent data
+const PREMIUM_STORAGE_KEYS = {
+  PREMIUM_CONTEXT: 'neural_sync_premium_context'
+};
+
 export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isPremium } = usePremium();
   
-  // Get context from location state, prop, or session storage
+  // Speech recognition hook
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    clearTranscript,
+    error: speechError
+  } = useMeetingSpeechRecognition();
+  
+  // Get context from location state, prop, session storage, or localStorage (for premium users)
   const [meetingContext] = useState<MeetingContext | null>(() => {
     const contextFromProp = context;
     const contextFromState = location.state?.context;
-    const contextFromStorage = sessionStorage.getItem(SESSION_STORAGE_KEYS.CONTEXT);
+    const contextFromSessionStorage = sessionStorage.getItem(SESSION_STORAGE_KEYS.CONTEXT);
+    const contextFromLocalStorage = localStorage.getItem(PREMIUM_STORAGE_KEYS.PREMIUM_CONTEXT);
     
-    return contextFromProp || contextFromState || (contextFromStorage ? JSON.parse(contextFromStorage) : null);
+    // Priority: prop > state > localStorage (premium) > sessionStorage
+    return contextFromProp || 
+           contextFromState || 
+           (contextFromLocalStorage ? JSON.parse(contextFromLocalStorage) : null) ||
+           (contextFromSessionStorage ? JSON.parse(contextFromSessionStorage) : null);
   });
 
   // Initialize state from session storage with timestamp conversion
@@ -94,12 +128,18 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
     return stored ? new Date(stored) : new Date();
   });
 
-  // Save context to session storage when it changes
+  // Save context to storage when it changes
   useEffect(() => {
     if (meetingContext) {
+      // Always save to sessionStorage for compatibility
       sessionStorage.setItem(SESSION_STORAGE_KEYS.CONTEXT, JSON.stringify(meetingContext));
+      
+      // Also save to localStorage for premium users for persistence across browser sessions
+      if (isPremium) {
+        localStorage.setItem(PREMIUM_STORAGE_KEYS.PREMIUM_CONTEXT, JSON.stringify(meetingContext));
+      }
     }
-  }, [meetingContext]);
+  }, [meetingContext, isPremium]);
 
   // Redirect if no context provided and none in storage
   useEffect(() => {
@@ -107,15 +147,6 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
       navigate('/setup');
     }
   }, [meetingContext, navigate]);
-
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    clearTranscript,
-    error: speechError
-  } = useSpeechRecognition();
 
   // Main transcript state - combines stored and new entries
   const [allTranscript, setAllTranscript] = useState(storedTranscript);
@@ -157,7 +188,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
         console.log('Added new speech entry to transcript:', latestEntry.text);
       }
     }
-  }, [transcript]);
+  }, [transcript, allTranscript]);
 
   // Save AI responses to session storage
   useEffect(() => {
@@ -335,20 +366,17 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
         confidence: 1.0
       }];
 
-      const codeResponse = await generateCodeResponse(meetingContext!, transcriptForAI);
+      const codeResult = await generateCodeResponse(meetingContext!, transcriptForAI);
       const endTime = Date.now();
       const responseTime = endTime - startTime;
-      
       const aiCodeResponse: AIResponse = {
         id: Date.now().toString(),
         query: questionToUse,
-        response: codeResponse,
+        response: codeResult.code,
+        explanation: codeResult.explanation,
         timestamp: new Date()
       };
-      
-      // Add to beginning of array for recent-first display
       setCodeResponses(prev => [aiCodeResponse, ...prev]);
-      
       showNotification('success', `Code response generated in ${responseTime}ms!`);
     } catch (error) {
       console.error('Error generating code:', error);
@@ -470,13 +498,13 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="px-4 py-6 mx-auto max-w-7xl">
-        <div className="grid gap-6 lg:grid-cols-3">
+      <div className="max-w-full px-2 py-2 mx-auto sm:px-4 sm:py-6 sm:max-w-2xl md:max-w-4xl lg:max-w-7xl">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Left Column - AI Response & Code */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-6 md:col-span-2 lg:col-span-2">
             {/* AI Response Generation - TOP PRIORITY */}
-            <div className="p-6 bg-white border-2 border-indigo-100 shadow-lg rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-4 bg-white border-2 border-indigo-100 shadow-lg sm:p-6 rounded-2xl">
+              <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="flex items-center text-xl font-bold text-gray-900">
                   <Brain className="w-6 h-6 mr-2 text-indigo-600" />
                   Neural AI Assistant
@@ -491,7 +519,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     </span>
                   )}
                 </h3>
-                <div className="flex space-x-3">
+                <div className="flex flex-col w-full gap-2 sm:flex-row sm:gap-3 sm:w-auto">
                   <button
                     onClick={() => handleGenerateResponse()}
                     disabled={isGeneratingResponse || (!allTranscript.length && !manualQuestion.trim())}
@@ -531,18 +559,18 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
               {/* Manual Question Input - ENHANCED */}
               <form onSubmit={handleManualQuestionSubmit} className="mb-6">
-                <div className="flex space-x-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                   <input
                     type="text"
                     value={manualQuestion}
                     onChange={(e) => setManualQuestion(e.target.value)}
                     placeholder="Type a question manually if speech recognition doesn't capture it..."
-                    className="flex-1 px-4 py-3 text-base transition-colors border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    className="flex-1 px-3 py-2 text-base transition-colors border border-gray-300 sm:px-4 sm:py-3 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                   />
                   <button
                     type="submit"
                     disabled={!manualQuestion.trim()}
-                    className="flex items-center px-6 py-3 space-x-2 text-white transition-colors bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center w-full px-4 py-2 space-x-2 text-white transition-colors bg-indigo-600 sm:px-6 sm:py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
                   >
                     <Send className="w-4 h-4" />
                     <span>Add</span>
@@ -560,13 +588,13 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               {/* AI Responses - ENHANCED SIZE AND SPACING */}
               <div 
                 ref={aiResponsesRef}
-                className="space-y-6 max-h-[400px] overflow-y-auto"
+                className="space-y-6 max-h-[300px] sm:max-h-[400px] overflow-y-auto"
               >
                 {aiResponses.length === 0 ? (
-                  <div className="py-12 text-center text-gray-500">
-                    <Brain className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium">AI responses will appear here</p>
-                    <p className="mt-2 text-sm">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
+                  <div className="py-8 text-center text-gray-500 sm:py-12">
+                    <Brain className="w-12 h-12 mx-auto mb-4 sm:w-16 sm:h-16 opacity-30" />
+                    <p className="text-base font-medium sm:text-lg">AI responses will appear here</p>
+                    <p className="mt-2 text-xs sm:text-sm">Record a question or type manually and click "Get Instant Response" for ultra-fast AI assistance</p>
                   </div>
                 ) : (
                   aiResponses.map((response) => (
@@ -605,7 +633,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     <Code className="w-5 h-5 mr-2 text-green-600" />
                     Code Responses
                   </h4>
-                  <div className="space-y-6 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-6 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
                     {codeResponses.map((response) => (
                       <div key={response.id} className="p-6 border border-green-100 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
                         <div className="flex items-start justify-between mb-4">
@@ -630,8 +658,14 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                           <p className="p-3 mb-4 text-base italic text-gray-700 rounded-lg bg-white/50">{response.query}</p>
                         </div>
                         <div className="p-4 font-mono text-sm bg-gray-900 rounded-lg">
-                          <pre className="text-green-400 whitespace-pre-wrap">{response.response}</pre>
+                          <pre className="text-green-400 whitespace-pre-wrap"><code>{stripCodeBlock(response.response)}</code></pre>
                         </div>
+                        {response.explanation && (
+                          <div className="p-3 mt-4 bg-green-100 rounded-lg">
+                            <p className="mb-1 text-sm font-semibold text-green-800">Explanation:</p>
+                            <p className="text-sm text-green-900 whitespace-pre-line">{response.explanation}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -640,9 +674,9 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
             </div>
 
             {/* Smart Tips & Summary */}
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Smart Tips */}
-              <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <div className="p-4 bg-white shadow-lg sm:p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="flex items-center text-lg font-semibold text-gray-900">
                     <Lightbulb className="w-5 h-5 mr-2 text-amber-500" />
@@ -673,7 +707,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
 
               {/* Meeting Summary */}
-              <div className="p-6 bg-white shadow-lg rounded-2xl">
+              <div className="p-4 bg-white shadow-lg sm:p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="flex items-center text-lg font-semibold text-gray-900">
                     <FileText className="w-5 h-5 mr-2" />
@@ -701,7 +735,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                     </button>
                   </div>
                 ) : meetingSummary ? (
-                  <div className="p-4 overflow-y-auto rounded-lg bg-gray-50 max-h-64">
+                  <div className="p-3 overflow-y-auto rounded-lg sm:p-4 bg-gray-50 max-h-40 sm:max-h-64">
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-xs font-medium tracking-wide uppercase text-emerald-600">
                         Meeting Summary
@@ -730,13 +764,13 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
           {/* Right Column - Questions & Transcript */}
           <div className="space-y-6">
             {/* Questions/Transcript Panel - RIGHT SIDE */}
-            <div className="p-6 bg-white shadow-lg rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-4 bg-white shadow-lg sm:p-6 rounded-2xl">
+              <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="flex items-center text-lg font-semibold text-gray-900">
                   <MessageSquare className="w-5 h-5 mr-2" />
                   Recent Questions & Transcript
                 </h2>
-                <div className="flex space-x-2">
+                <div className="flex flex-col w-full gap-2 sm:flex-row sm:gap-2 sm:w-auto">
                   {allTranscript.length > 0 && (
                     <>
                       <button
@@ -758,11 +792,11 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               </div>
 
               {/* Recording Controls */}
-              <div className="mb-6 space-y-3">
+              <div className="mb-6 space-y-2 sm:space-y-3">
                 {recordingState === 'idle' && (
                   <button
                     onClick={handleStartRecording}
-                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-indigo-600 hover:bg-indigo-700 rounded-xl"
+                    className="flex items-center justify-center w-full px-4 py-2 space-x-2 font-medium text-white transition-all duration-200 bg-indigo-600 sm:px-6 sm:py-3 hover:bg-indigo-700 rounded-xl"
                   >
                     <Mic className="w-5 h-5" />
                     <span>Start Recording</span>
@@ -772,7 +806,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
                 {recordingState === 'recording' && (
                   <button
                     onClick={handleStopRecording}
-                    className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-red-500 hover:bg-red-600 rounded-xl animate-pulse-soft"
+                    className="flex items-center justify-center w-full px-4 py-2 space-x-2 font-medium text-white transition-all duration-200 bg-red-500 sm:px-6 sm:py-3 hover:bg-red-600 rounded-xl animate-pulse-soft"
                   >
                     <MicOff className="w-5 h-5" />
                     <span>Recording... (Click to Stop)</span>
@@ -790,29 +824,29 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
               {/* Transcript Display - Recent First with Better Spacing */}
               <div
                 ref={transcriptRef}
-                className="p-4 overflow-y-auto border bg-gray-50 rounded-xl h-80"
+                className="p-3 overflow-y-auto border sm:p-4 bg-gray-50 rounded-xl h-60 sm:h-80"
               >
                 {allTranscript.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
-                      <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="font-medium">Click "Start Recording" to capture questions</p>
-                      <p className="mt-2 text-sm">Or type questions manually above</p>
+                      <Mic className="w-8 h-8 mx-auto mb-4 opacity-50 sm:w-12 sm:h-12" />
+                      <p className="text-base font-medium sm:text-lg">Click "Start Recording" to capture questions</p>
+                      <p className="mt-2 text-xs sm:text-sm">Or type questions manually above</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {/* Show most recent first with better spacing */}
                     {[...allTranscript].reverse().map((entry) => (
-                      <div key={entry.id} className="p-4 mb-3 bg-white border-l-4 border-indigo-400 rounded-lg shadow-sm">
-                        <div className="flex items-start justify-between">
-                          <p className="flex-1 text-base font-medium leading-relaxed text-gray-900">{entry.text}</p>
-                          <span className="flex-shrink-0 ml-3 text-xs text-gray-500">
+                      <div key={entry.id} className="p-3 mb-2 bg-white border-l-4 border-indigo-400 rounded-lg shadow-sm sm:p-4 sm:mb-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="flex-1 text-base font-medium leading-relaxed text-gray-900 break-words">{entry.text}</p>
+                          <span className="flex-shrink-0 text-xs text-gray-500 sm:ml-3">
                             {entry.timestamp.toLocaleTimeString()}
                           </span>
                         </div>
                         {entry.confidence && entry.confidence < 1 && (
-                          <div className="mt-3">
+                          <div className="mt-2 sm:mt-3">
                             <div className="w-full h-1 bg-gray-200 rounded-full">
                               <div 
                                 className="h-1 bg-indigo-500 rounded-full"
@@ -837,26 +871,26 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
             </div>
 
             {/* Session Stats */}
-            <div className="p-6 bg-white shadow-lg rounded-2xl">
+            <div className="p-4 bg-white shadow-lg sm:p-6 rounded-2xl">
               <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
                 <BarChart3 className="w-5 h-5 mr-2" />
                 Session Stats
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-600">{allTranscript.length}</div>
+                  <div className="text-lg font-bold text-indigo-600 sm:text-2xl">{allTranscript.length}</div>
                   <div className="text-xs text-gray-600">Questions Captured</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{aiResponses.length}</div>
+                  <div className="text-lg font-bold text-purple-600 sm:text-2xl">{aiResponses.length}</div>
                   <div className="text-xs text-gray-600">AI Responses</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{codeResponses.length}</div>
+                  <div className="text-lg font-bold text-green-600 sm:text-2xl">{codeResponses.length}</div>
                   <div className="text-xs text-gray-600">Code Responses</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-emerald-600">
+                  <div className="text-base font-bold sm:text-lg text-emerald-600">
                     {Math.floor((Date.now() - startTime.current.getTime()) / 60000)} min
                   </div>
                   <div className="text-xs text-gray-600">Session Duration</div>
@@ -869,8 +903,8 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
       {/* Premium Modal */}
       {showPremiumModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="w-full max-w-md p-8 bg-white rounded-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-50 sm:p-4">
+          <div className="w-full max-w-xs p-4 bg-white sm:max-w-md sm:p-8 rounded-2xl">
             <div className="text-center">
               <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl">
                 <Crown className="w-8 h-8 text-white" />
@@ -903,7 +937,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-md ${
+        <div className={`fixed top-2 right-2 sm:top-4 sm:right-4 z-50 p-3 sm:p-4 rounded-xl shadow-2xl flex items-center space-x-2 max-w-xs sm:max-w-md ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>
           {notification.type === 'success' ? (
@@ -911,7 +945,7 @@ export const MeetingScreen: React.FC<MeetingScreenProps> = ({ context }) => {
           ) : (
             <AlertCircle className="flex-shrink-0 w-5 h-5" />
           )}
-          <span className="text-sm font-medium">{notification.message}</span>
+          <span className="text-xs font-medium sm:text-sm">{notification.message}</span>
         </div>
       )}
     </div>

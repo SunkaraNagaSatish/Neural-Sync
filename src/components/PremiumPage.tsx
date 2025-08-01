@@ -90,35 +90,35 @@ export const PremiumPage: React.FC = () => {
 
   if (isPremium) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
+      <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-white rounded-3xl shadow-2xl p-12">
-            <div className="w-20 h-20 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="p-12 bg-white shadow-2xl rounded-3xl">
+            <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl">
               <Crown className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-4">
+            <h1 className="mb-4 text-4xl font-bold text-transparent bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text">
               You're Already Premium!
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="mb-8 text-xl text-gray-600">
               Enjoy all the premium features and continue acing your interviews!
             </p>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid gap-6 mb-8 md:grid-cols-3">
               <div className="text-center">
-                <div className="text-3xl font-bold text-indigo-600 mb-2">∞</div>
+                <div className="mb-2 text-3xl font-bold text-indigo-600">∞</div>
                 <div className="text-sm text-gray-600">Unlimited AI Responses</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">24/7</div>
+                <div className="mb-2 text-3xl font-bold text-purple-600">24/7</div>
                 <div className="text-sm text-gray-600">Priority Support</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-emerald-600 mb-2">100%</div>
+                <div className="mb-2 text-3xl font-bold text-emerald-600">100%</div>
                 <div className="text-sm text-gray-600">All Features Unlocked</div>
               </div>
             </div>
             <button
               onClick={() => navigate('/setup')}
-              className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 mx-auto"
+              className="flex items-center px-8 py-4 mx-auto space-x-2 text-white transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700"
             >
               <span>Start Interview Session</span>
               <ArrowRight className="w-5 h-5" />
@@ -130,96 +130,96 @@ export const PremiumPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen px-4 py-8 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl mb-6 shadow-lg">
+        <div className="mb-16 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-6 shadow-lg bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl">
             <Crown className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-4">
+          <h1 className="mb-4 text-5xl font-bold text-transparent bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text">
             Upgrade to Premium
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="max-w-2xl mx-auto text-xl text-gray-600">
             Unlock the full power of Neural Sync AI and take your interview preparation to the next level
           </p>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+        <div className="grid gap-8 mb-16 md:grid-cols-2">
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free Plan</h3>
-              <div className="text-4xl font-bold text-gray-600 mb-2">$0</div>
+          <div className="p-8 bg-white border border-gray-200 shadow-lg rounded-2xl">
+            <div className="mb-8 text-center">
+              <h3 className="mb-2 text-2xl font-bold text-gray-900">Free Plan</h3>
+              <div className="mb-2 text-4xl font-bold text-gray-600">$0</div>
               <p className="text-gray-500">Perfect for getting started</p>
             </div>
-            <ul className="space-y-4 mb-8">
+            <ul className="mb-8 space-y-4">
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-green-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-green-500" />
                 <span>5 AI responses per day</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-green-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-green-500" />
                 <span>Basic interview practice</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-green-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-green-500" />
                 <span>Speech recognition</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-green-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-green-500" />
                 <span>Basic templates</span>
               </li>
             </ul>
-            <button className="w-full py-3 px-6 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+            <button className="w-full px-6 py-3 text-gray-700 transition-colors border border-gray-300 rounded-xl hover:bg-gray-50">
               Current Plan
             </button>
           </div>
 
           {/* Premium Plan */}
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-2xl p-8 border-2 border-amber-200 relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+          <div className="relative p-8 border-2 shadow-2xl bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-amber-200">
+            <div className="absolute transform -translate-x-1/2 -top-4 left-1/2">
+              <span className="px-4 py-2 text-sm font-medium text-white rounded-full bg-gradient-to-r from-amber-500 to-orange-500">
                 Most Popular
               </span>
             </div>
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium Plan</h3>
-              <div className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-2">
+            <div className="mb-8 text-center">
+              <h3 className="mb-2 text-2xl font-bold text-gray-900">Premium Plan</h3>
+              <div className="mb-2 text-4xl font-bold text-transparent bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text">
                 $19
               </div>
               <p className="text-gray-600">per month</p>
             </div>
-            <ul className="space-y-4 mb-8">
+            <ul className="mb-8 space-y-4">
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">Unlimited AI responses</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">Advanced AI models</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">Detailed analytics</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">Export all formats</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">24/7 priority support</span>
               </li>
               <li className="flex items-center">
-                <Check className="w-5 h-5 text-amber-500 mr-3" />
+                <Check className="w-5 h-5 mr-3 text-amber-500" />
                 <span className="font-medium">Custom templates</span>
               </li>
             </ul>
             <button
               onClick={handleUpgrade}
-              className="w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 font-semibold flex items-center justify-center space-x-2"
+              className="flex items-center justify-center w-full px-6 py-3 space-x-2 font-semibold text-white transition-all duration-200 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-600 hover:to-orange-600"
             >
               <Crown className="w-5 h-5" />
               <span>Upgrade Now</span>
@@ -228,8 +228,8 @@ export const PremiumPage: React.FC = () => {
         </div>
 
         {/* Feature Comparison */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-16">
-          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+        <div className="p-8 mb-16 bg-white shadow-lg rounded-2xl">
+          <h3 className="mb-8 text-2xl font-bold text-center text-gray-900">
             Feature Comparison
           </h3>
           <div className="space-y-6">
@@ -237,23 +237,23 @@ export const PremiumPage: React.FC = () => {
               const Icon = feature.icon;
               return (
                 <div key={index} className="flex items-center justify-between p-6 bg-gray-50 rounded-xl">
-                  <div className="flex items-center space-x-4 flex-1">
-                    <div className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                  <div className="flex items-center flex-1 space-x-4">
+                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl">
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">{feature.title}</h4>
-                      <p className="text-gray-600 text-sm">{feature.description}</p>
+                      <p className="text-sm text-gray-600">{feature.description}</p>
                     </div>
                   </div>
                   <div className="flex space-x-8">
                     <div className="text-center">
-                      <div className="text-sm text-gray-500 mb-1">Free</div>
-                      <div className="text-gray-700 font-medium">{feature.free}</div>
+                      <div className="mb-1 text-sm text-gray-500">Free</div>
+                      <div className="font-medium text-gray-700">{feature.free}</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-sm text-amber-600 mb-1">Premium</div>
-                      <div className="text-amber-600 font-bold">{feature.premium}</div>
+                      <div className="mb-1 text-sm text-amber-600">Premium</div>
+                      <div className="font-bold text-amber-600">{feature.premium}</div>
                     </div>
                   </div>
                 </div>
@@ -264,18 +264,18 @@ export const PremiumPage: React.FC = () => {
 
         {/* Testimonials */}
         <div className="mb-16">
-          <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
+          <h3 className="mb-12 text-3xl font-bold text-center text-gray-900">
             What Our Premium Users Say
           </h3>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-3">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg p-6">
+              <div key={index} className="p-6 bg-white shadow-lg rounded-2xl">
                 <div className="flex items-center mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-6 italic">
+                <p className="mb-6 italic text-gray-700">
                   "{testimonial.content}"
                 </p>
                 <div>
@@ -288,16 +288,16 @@ export const PremiumPage: React.FC = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-3xl p-12 text-center text-white">
-          <h3 className="text-3xl font-bold mb-4">
+        <div className="p-12 text-center text-white bg-gradient-to-r from-indigo-600 to-purple-700 rounded-3xl">
+          <h3 className="mb-4 text-3xl font-bold">
             Ready to Unlock Your Interview Potential?
           </h3>
-          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+          <p className="max-w-2xl mx-auto mb-8 text-xl text-indigo-100">
             Join thousands of professionals who have upgraded to Premium and landed their dream jobs
           </p>
           <button
             onClick={handleUpgrade}
-            className="px-8 py-4 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors flex items-center space-x-2 mx-auto"
+            className="flex items-center px-8 py-4 mx-auto space-x-2 font-semibold text-indigo-600 transition-colors bg-white rounded-xl hover:bg-gray-100"
           >
             <Crown className="w-5 h-5" />
             <span>Upgrade to Premium</span>
