@@ -67,17 +67,6 @@ export const generateMeetingResponse = async (
                                 questionLower.includes('why');
 
     // Enhanced prompt with key skills integration for incomplete questions
-    // ENHANCED: Smart question analysis and context-aware prompting
-    const questionLower = lastQuestion.toLowerCase();
-    const isIncompleteQuestion = lastQuestion.length < 20 || 
-                                questionLower.includes('diff') || 
-                                questionLower.includes('what is') ||
-                                questionLower.includes('explain') ||
-                                questionLower.includes('tell me') ||
-                                questionLower.includes('how') ||
-                                questionLower.includes('why');
-
-    // Enhanced prompt with key skills integration for incomplete questions
     const prompt = `You are an expert interview coach helping a candidate respond professionally and confidently.
 
 CANDIDATE PROFILE:
@@ -201,29 +190,20 @@ export const generateCodeResponse = async (
 
     // FIXED: Determine the primary technology from key skills and job title
     const keySkillsLower = context.keySkills.toLowerCase();
-    // FIXED: Determine the primary technology from key skills and job title
-    const keySkillsLower = context.keySkills.toLowerCase();
     const jobTitleLower = context.jobTitle.toLowerCase();
     const questionLower = lastQuestion.toLowerCase();
     
     let primaryTech = 'JavaScript';
     if (keySkillsLower.includes('react') || jobTitleLower.includes('react') || questionLower.includes('react')) {
-    }
-    if (keySkillsLower.includes('react') || jobTitleLower.includes('react') || questionLower.includes('react')) {
       primaryTech = 'React.js';
-    } else if (keySkillsLower.includes('python') || jobTitleLower.includes('python') || questionLower.includes('python')) {
     } else if (keySkillsLower.includes('python') || jobTitleLower.includes('python') || questionLower.includes('python')) {
       primaryTech = 'Python';
     } else if (keySkillsLower.includes('java') && !keySkillsLower.includes('javascript') || jobTitleLower.includes('java') || questionLower.includes('java')) {
-    } else if (keySkillsLower.includes('java') && !keySkillsLower.includes('javascript') || jobTitleLower.includes('java') || questionLower.includes('java')) {
       primaryTech = 'Java';
-    } else if (keySkillsLower.includes('node') || jobTitleLower.includes('node') || questionLower.includes('node')) {
     } else if (keySkillsLower.includes('node') || jobTitleLower.includes('node') || questionLower.includes('node')) {
       primaryTech = 'Node.js';
     } else if (keySkillsLower.includes('angular') || jobTitleLower.includes('angular') || questionLower.includes('angular')) {
-    } else if (keySkillsLower.includes('angular') || jobTitleLower.includes('angular') || questionLower.includes('angular')) {
       primaryTech = 'Angular';
-    } else if (keySkillsLower.includes('vue') || jobTitleLower.includes('vue') || questionLower.includes('vue')) {
     } else if (keySkillsLower.includes('vue') || jobTitleLower.includes('vue') || questionLower.includes('vue')) {
       primaryTech = 'Vue.js';
     }
@@ -312,10 +292,6 @@ Generate the code and explanation as described above.`;
       'html', 'css', 'dom', 'event', 'fetch', 'axios', 'rest', 'graphql'
     ];
     
-    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword)) ||
-                          context.keySkills.toLowerCase().split(',').some(skill => 
-                            questionLower.includes(skill.trim().toLowerCase())
-                          );
     const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword)) ||
                           context.keySkills.toLowerCase().split(',').some(skill => 
                             questionLower.includes(skill.trim().toLowerCase())
@@ -449,7 +425,6 @@ CONTEXT:
 Role: ${context.jobTitle}
 Company: ${context.companyName}
 Key Skills: ${context.keySkills}
-Key Skills: ${context.keySkills}
 Recent conversation: ${recentTranscript || 'Interview starting'}
 
 CANDIDATE BACKGROUND:
@@ -457,7 +432,6 @@ ${context.resumeText.slice(0, 600)}
 
 Provide tips that are:
 - Specific to this role and company
-- Based on the conversation context and key skills
 - Based on the conversation context and key skills
 - Confidence-building and actionable
 - Professional and relevant
@@ -477,7 +451,6 @@ Format each tip as a bullet point starting with "•"`;
     
     return tips.length > 0 ? tips : [
       `Highlight your expertise in ${context.keySkills} with specific examples`,
-      `Highlight your expertise in ${context.keySkills} with specific examples`,
       "Ask thoughtful questions about the team structure and daily responsibilities",
       "Provide concrete examples with measurable results from your background",
       "Show genuine enthusiasm for the company's mission and values",
@@ -488,9 +461,7 @@ Format each tip as a bullet point starting with "•"`;
     console.error('Tips generation error:', error);
     return [
       `Stay confident and reference your experience with ${context.keySkills}`,
-      `Stay confident and reference your experience with ${context.keySkills}`,
       "Ask insightful questions about the role and company culture",
-      "Provide specific examples that demonstrate your technical skills",
       "Provide specific examples that demonstrate your technical skills",
       "Show enthusiasm and genuine interest in the opportunity",
       "Prepare thoughtful questions about the team and challenges"

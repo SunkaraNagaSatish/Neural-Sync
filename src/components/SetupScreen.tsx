@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain, Target } from 'lucide-react';
-import { Upload, FileText, Briefcase, Building2, Calendar, ArrowRight, AlertCircle, CheckCircle, Loader, Info, Zap, Brain, Target } from 'lucide-react';
 import { parsePDF, validatePDFFile, extractTextFromPDFAlternative, testPDFJSAvailability } from '../services/pdfParser';
 import { MeetingContext } from '../types';
 import { usePremium } from '../contexts/PremiumContext';

@@ -31,7 +31,7 @@ import {
   Crown,
   Code
 } from 'lucide-react';
-import { useMeetingSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useMeetingSpeechRecognition } from '../hooks/useMeetingSpeechRecognition';
 import { MeetingContext, AIResponse, TranscriptEntry } from '../types';
 import { generateMeetingResponse, generateMeetingSummary, generateInterviewTips, testGeminiConnection, isGeminiReady, generateCodeResponse } from '../services/geminiService';
 import { usePremium } from '../contexts/PremiumContext';
