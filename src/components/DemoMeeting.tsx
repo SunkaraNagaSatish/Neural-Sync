@@ -16,7 +16,7 @@ import {
   Volume2,
   MicOff
 } from 'lucide-react';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+
 import { generateInterviewQuestion, evaluateAnswer } from '../services/aiInterviewService';
 import { generateMeetingResponse } from '../services/geminiService';
 import { TranscriptEntry, MeetingContext } from '../types';
