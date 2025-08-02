@@ -65,19 +65,6 @@ export const generateMeetingResponse = async (
                                 questionLower.includes('tell me') ||
                                 questionLower.includes('how') ||
                                 questionLower.includes('why');
-
-    // Enhanced prompt with key skills integration for incomplete questions
-    // ENHANCED: Smart question analysis and context-aware prompting
-    const questionLower = lastQuestion.toLowerCase();
-    const isIncompleteQuestion = lastQuestion.length < 20 || 
-                                questionLower.includes('diff') || 
-                                questionLower.includes('what is') ||
-                                questionLower.includes('explain') ||
-                                questionLower.includes('tell me') ||
-                                questionLower.includes('how') ||
-                                questionLower.includes('why');
-
-    // Enhanced prompt with key skills integration for incomplete questions
     const prompt = `You are an expert interview coach helping a candidate respond professionally and confidently.
 
 CANDIDATE PROFILE:
@@ -224,28 +211,20 @@ export const generateCodeResponse = async (
 
     // FIXED: Determine the primary technology from key skills and job title
     const keySkillsLower = context.keySkills.toLowerCase();
-    // FIXED: Determine the primary technology from key skills and job title
-    const keySkillsLower = context.keySkills.toLowerCase();
     const jobTitleLower = context.jobTitle.toLowerCase();
     const questionLower = lastQuestion.toLowerCase();
     
     let primaryTech = 'JavaScript';
     if (keySkillsLower.includes('react') || jobTitleLower.includes('react') || questionLower.includes('react')) {
-    if (keySkillsLower.includes('react') || jobTitleLower.includes('react') || questionLower.includes('react')) {
       primaryTech = 'React.js';
-    } else if (keySkillsLower.includes('python') || jobTitleLower.includes('python') || questionLower.includes('python')) {
     } else if (keySkillsLower.includes('python') || jobTitleLower.includes('python') || questionLower.includes('python')) {
       primaryTech = 'Python';
     } else if (keySkillsLower.includes('java') && !keySkillsLower.includes('javascript') || jobTitleLower.includes('java') || questionLower.includes('java')) {
-    } else if (keySkillsLower.includes('java') && !keySkillsLower.includes('javascript') || jobTitleLower.includes('java') || questionLower.includes('java')) {
       primaryTech = 'Java';
-    } else if (keySkillsLower.includes('node') || jobTitleLower.includes('node') || questionLower.includes('node')) {
     } else if (keySkillsLower.includes('node') || jobTitleLower.includes('node') || questionLower.includes('node')) {
       primaryTech = 'Node.js';
     } else if (keySkillsLower.includes('angular') || jobTitleLower.includes('angular') || questionLower.includes('angular')) {
-    } else if (keySkillsLower.includes('angular') || jobTitleLower.includes('angular') || questionLower.includes('angular')) {
       primaryTech = 'Angular';
-    } else if (keySkillsLower.includes('vue') || jobTitleLower.includes('vue') || questionLower.includes('vue')) {
     } else if (keySkillsLower.includes('vue') || jobTitleLower.includes('vue') || questionLower.includes('vue')) {
       primaryTech = 'Vue.js';
     }
@@ -334,10 +313,6 @@ Generate the code and explanation as described above.`;
       'html', 'css', 'dom', 'event', 'fetch', 'axios', 'rest', 'graphql'
     ];
     
-    const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword)) ||
-                          context.keySkills.toLowerCase().split(',').some(skill => 
-                            questionLower.includes(skill.trim().toLowerCase())
-                          );
     const isCodeQuestion = codeKeywords.some(keyword => questionLower.includes(keyword)) ||
                           context.keySkills.toLowerCase().split(',').some(skill => 
                             questionLower.includes(skill.trim().toLowerCase())
