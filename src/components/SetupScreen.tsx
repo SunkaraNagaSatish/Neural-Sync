@@ -242,8 +242,6 @@ export const SetupScreen: React.FC = () => {
           meetingType: formData.meetingType,
           resumeText: formData.resumeText.trim(),
           keySkills: formData.keySkills.trim() // NEW: Include key skills
-          resumeText: formData.resumeText.trim(),
-          keySkills: formData.keySkills.trim() // NEW: Include key skills
         };
         
         console.log('Navigating to meeting with context:', meetingContext);
