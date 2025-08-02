@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { generateMeetingResponse } from '../services/geminiService';
 import { MeetingContext, TranscriptEntry } from '../types';
 
@@ -528,3 +527,4 @@ export const AIAssistantPreview: React.FC = React.memo(() => {
 });
 
 AIAssistantPreview.displayName = 'AIAssistantPreview';
+
