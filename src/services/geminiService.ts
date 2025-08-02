@@ -65,13 +65,14 @@ export const generateMeetingResponse = async (
                                 questionLower.includes('tell me') ||
                                 questionLower.includes('how') ||
                                 questionLower.includes('why');
+
+    // Enhanced prompt with key skills integration for incomplete questions
     const prompt = `You are an expert interview coach helping a candidate respond professionally and confidently.
 
 CANDIDATE PROFILE:
 - Position: ${context.jobTitle}
 - Company: ${context.companyName}
 - Interview Type: ${context.meetingType}
-- Key Skills & Technologies: ${context.keySkills}
 - Key Skills & Technologies: ${context.keySkills}
 
 CANDIDATE BACKGROUND (key highlights):
@@ -85,19 +86,12 @@ SPECIAL INSTRUCTION FOR INCOMPLETE QUESTION:
 This appears to be an incomplete or brief question. Use the candidate's key skills (${context.keySkills}) to provide a relevant, comprehensive answer. If the question mentions technical terms like "let", "const", "diff", etc., relate your answer to the candidate's JavaScript/programming skills and provide practical examples.
 ` : ''}
 
-${isIncompleteQuestion ? `
-SPECIAL INSTRUCTION FOR INCOMPLETE QUESTION:
-This appears to be an incomplete or brief question. Use the candidate's key skills (${context.keySkills}) to provide a relevant, comprehensive answer. If the question mentions technical terms like "let", "const", "diff", etc., relate your answer to the candidate's JavaScript/programming skills and provide practical examples.
-` : ''}
-
 INSTRUCTIONS:
 - Provide a direct, professional response to the specific question asked
 - Use relevant experience from the candidate's background when applicable
 - Keep response conversational, confident, and authentic
 - Structure answer clearly with specific examples if relevant
 - Match the tone appropriate for ${context.meetingType}
-- If the question is incomplete, use the key skills context to provide a comprehensive answer
-- For technical questions, relate to the candidate's expertise in: ${context.keySkills}
 - If the question is incomplete, use the key skills context to provide a comprehensive answer
 - For technical questions, relate to the candidate's expertise in: ${context.keySkills}
 - Aim for 2-4 sentences that directly address the question
@@ -115,15 +109,12 @@ Generate a natural, professional response:`;
     console.log(`Neural Sync response generated in ${endTime - startTime}ms`);
     
     // Enhanced fallback responses based on question type and key skills
-    // Enhanced fallback responses based on question type and key skills
     if (!text || text.length < 20) {
       const questionLower = lastQuestion.toLowerCase();
       
       if (questionLower.includes('yourself') || questionLower.includes('background')) {
         return `I'm a dedicated ${context.jobTitle} with strong experience in ${context.keySkills}. I'm particularly excited about this opportunity at ${context.companyName} because it aligns perfectly with my expertise in these technologies and allows me to contribute my skills while continuing to grow professionally.`;
-        return `I'm a dedicated ${context.jobTitle} with strong experience in ${context.keySkills}. I'm particularly excited about this opportunity at ${context.companyName} because it aligns perfectly with my expertise in these technologies and allows me to contribute my skills while continuing to grow professionally.`;
       } else if (questionLower.includes('strength') || questionLower.includes('skills')) {
-        return `One of my key strengths is my expertise in ${context.keySkills}. I've consistently delivered successful projects by combining these technical skills with strong problem-solving abilities and effective collaboration. My experience with these technologies has enabled me to adapt quickly to new challenges.`;
         return `One of my key strengths is my expertise in ${context.keySkills}. I've consistently delivered successful projects by combining these technical skills with strong problem-solving abilities and effective collaboration. My experience with these technologies has enabled me to adapt quickly to new challenges.`;
       } else if (questionLower.includes('why') && questionLower.includes('company')) {
         return `I'm drawn to ${context.companyName} because of your innovative approach and the opportunity to work with technologies I'm passionate about, including ${context.keySkills}. This role represents an excellent opportunity to contribute to meaningful projects while working with a talented team.`;
@@ -137,20 +128,8 @@ Generate a natural, professional response:`;
         } else {
           return `Based on my experience with ${context.keySkills}, I can explain various technical differences. Could you provide more context about which specific concepts you'd like me to compare?`;
         }
-        return `I'm drawn to ${context.companyName} because of your innovative approach and the opportunity to work with technologies I'm passionate about, including ${context.keySkills}. This role represents an excellent opportunity to contribute to meaningful projects while working with a talented team.`;
-      } else if (questionLower.includes('diff') || questionLower.includes('difference')) {
-        // Handle incomplete technical questions using key skills
-        const skills = context.keySkills.toLowerCase();
-        if (skills.includes('javascript') || skills.includes('js')) {
-          return "Based on my JavaScript experience, I can explain the key differences. For example, if you're asking about 'let' vs 'const' vs 'var', the main differences are in scope, hoisting behavior, and reassignment capabilities. 'Let' and 'const' are block-scoped, while 'var' is function-scoped. 'Const' prevents reassignment, while 'let' allows it.";
-        } else if (skills.includes('react')) {
-          return "In my React experience, I've worked with many concepts that have important differences. For instance, props vs state, functional vs class components, or controlled vs uncontrolled components. Could you specify which comparison you'd like me to elaborate on?";
-        } else {
-          return `Based on my experience with ${context.keySkills}, I can explain various technical differences. Could you provide more context about which specific concepts you'd like me to compare?`;
-        }
       }
       
-      return `That's an excellent question. Based on my experience with ${context.keySkills} and background in ${context.jobTitle}, I believe I can provide valuable insights. Could you provide a bit more context so I can give you the most relevant and detailed answer?`;
       return `That's an excellent question. Based on my experience with ${context.keySkills} and background in ${context.jobTitle}, I believe I can provide valuable insights. Could you provide a bit more context so I can give you the most relevant and detailed answer?`;
     }
     
@@ -446,7 +425,6 @@ CONTEXT:
 Role: ${context.jobTitle}
 Company: ${context.companyName}
 Key Skills: ${context.keySkills}
-Key Skills: ${context.keySkills}
 Recent conversation: ${recentTranscript || 'Interview starting'}
 
 CANDIDATE BACKGROUND:
@@ -454,7 +432,6 @@ ${context.resumeText.slice(0, 600)}
 
 Provide tips that are:
 - Specific to this role and company
-- Based on the conversation context and key skills
 - Based on the conversation context and key skills
 - Confidence-building and actionable
 - Professional and relevant
@@ -474,7 +451,6 @@ Format each tip as a bullet point starting with "•"`;
     
     return tips.length > 0 ? tips : [
       `Highlight your expertise in ${context.keySkills} with specific examples`,
-      `Highlight your expertise in ${context.keySkills} with specific examples`,
       "Ask thoughtful questions about the team structure and daily responsibilities",
       "Provide concrete examples with measurable results from your background",
       "Show genuine enthusiasm for the company's mission and values",
@@ -485,9 +461,7 @@ Format each tip as a bullet point starting with "•"`;
     console.error('Tips generation error:', error);
     return [
       `Stay confident and reference your experience with ${context.keySkills}`,
-      `Stay confident and reference your experience with ${context.keySkills}`,
       "Ask insightful questions about the role and company culture",
-      "Provide specific examples that demonstrate your technical skills",
       "Provide specific examples that demonstrate your technical skills",
       "Show enthusiasm and genuine interest in the opportunity",
       "Prepare thoughtful questions about the team and challenges"
